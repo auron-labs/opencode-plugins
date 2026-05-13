@@ -50,6 +50,21 @@ const toPrice = (value: unknown) => {
   return num
 }
 
+const flattenModelInfo = (value: unknown) => {
+  if (!value || typeof value !== "object") return {}
+
+  const item = value as Record<string, unknown>
+  const nestedInfo =
+    item.model_info && typeof item.model_info === "object"
+      ? (item.model_info as Record<string, unknown>)
+      : {}
+
+  return {
+    ...item,
+    ...nestedInfo,
+  }
+}
+
 const buildHeaders = (apiKey?: string) => {
   const headers: Record<string, string> = {
     Accept: "application/json",
@@ -183,7 +198,7 @@ const server: Plugin = async () => {
               for (const item of infoPayload.data) {
                 const id = getModelID(item)
                 if (!id) continue
-                infoByModelID.set(id, item)
+                infoByModelID.set(id, flattenModelInfo(item))
               }
             }
 
@@ -219,8 +234,14 @@ const server: Plugin = async () => {
           const info = infoByModelID.get(id) ?? {}
           const modelInfo = {
             ...info,
-            ...(typeof item === "object" && item ? item : {}),
+            ...flattenModelInfo(item),
           }
+          const inputLimit =
+            toLimit(modelInfo?.max_input_tokens) ??
+            toLimit(modelInfo?.max_context_tokens) ??
+            toLimit(modelInfo?.context_window) ??
+            toLimit(modelInfo?.max_tokens)
+          const outputLimit = toLimit(modelInfo?.max_output_tokens)
 
           output[id] = {
             id,
@@ -229,11 +250,9 @@ const server: Plugin = async () => {
               (typeof modelInfo?.model_name === "string" && modelInfo.model_name) ||
               id,
             limit: {
-              context:
-                toLimit(modelInfo?.max_input_tokens) ??
-                toLimit(modelInfo?.max_context_tokens) ??
-                toLimit(modelInfo?.context_window),
-              output: toLimit(modelInfo?.max_output_tokens),
+              context: inputLimit,
+              input: inputLimit,
+              output: outputLimit,
             },
             cost: {
               input:
