@@ -4,6 +4,8 @@ const PROVIDER_ID = "litellm"
 const PROVIDER_NAME = "LiteLLM"
 const DEFAULT_BASE_URL = "http://localhost:4000/v1"
 
+type LiteLLMModel = Record<string, any>
+
 const normalizeBaseURL = (value?: string) => {
   const input = (value ?? "").trim()
   if (!input) return DEFAULT_BASE_URL
@@ -73,6 +75,139 @@ const buildHeaders = (apiKey?: string) => {
   return headers
 }
 
+const getProviderID = (provider: any) => provider?.info?.id ?? provider?.id
+
+const mergeTags = (...groups: unknown[]) => {
+  const seen = new Set<string>()
+  const tags: string[] = []
+
+  for (const group of groups) {
+    if (!Array.isArray(group)) continue
+    for (const item of group) {
+      if (typeof item !== "string") continue
+      const tag = item.trim()
+      if (!tag || seen.has(tag)) continue
+      seen.add(tag)
+      tags.push(tag)
+    }
+  }
+
+  return tags
+}
+
+const buildRequestTags = (input: { sessionID: string; agent: string; model: { id: string } }) => [
+  "opencode",
+  `opencode-session:${input.sessionID}`,
+  `opencode-agent:${input.agent}`,
+  `opencode-model:${input.model.id}`,
+]
+
+const buildSpendLogsMetadata = (input: {
+  sessionID: string
+  agent: string
+  model: { id: string }
+  provider: any
+  message: { id: string }
+}) => ({
+  opencode_session_id: input.sessionID,
+  opencode_message_id: input.message.id,
+  opencode_agent: input.agent,
+  opencode_model: input.model.id,
+  opencode_provider: getProviderID(input.provider),
+})
+
+const fetchLiteLLMModelMap = async (baseURL: string, apiKey?: string) => {
+  const headers = buildHeaders(apiKey)
+  let infoByModelID = new Map<string, LiteLLMModel>()
+
+  try {
+    const infoResponse = await fetch(`${baseURL}/model/info`, {
+      method: "GET",
+      headers,
+    })
+
+    if (infoResponse.ok) {
+      const infoPayload = (await infoResponse.json()) as
+        | { data?: any[]; model_info?: Record<string, any> }
+        | undefined
+
+      if (Array.isArray(infoPayload?.data)) {
+        for (const item of infoPayload.data) {
+          const id = getModelID(item)
+          if (!id) continue
+          infoByModelID.set(id, flattenModelInfo(item))
+        }
+      }
+
+      if (infoPayload?.model_info && typeof infoPayload.model_info === "object") {
+        for (const [id, value] of Object.entries(infoPayload.model_info)) {
+          infoByModelID.set(id, {
+            ...(infoByModelID.get(id) ?? {}),
+            ...value,
+          })
+        }
+      }
+    }
+  } catch {
+    infoByModelID = new Map<string, LiteLLMModel>()
+  }
+
+  const response = await fetch(`${baseURL}/models`, {
+    method: "GET",
+    headers,
+  })
+
+  if (!response.ok) {
+    throw new Error(`LiteLLM model discovery failed (${response.status})`)
+  }
+
+  const payload = (await response.json()) as { data?: any[] }
+  const output: Record<string, any> = {}
+
+  for (const item of payload.data ?? []) {
+    const id = getModelID(item)
+    if (!id) continue
+
+    const info = infoByModelID.get(id) ?? {}
+    const modelInfo = {
+      ...info,
+      ...flattenModelInfo(item),
+    }
+    const inputLimit =
+      toLimit(modelInfo?.max_input_tokens) ??
+      toLimit(modelInfo?.max_context_tokens) ??
+      toLimit(modelInfo?.context_window) ??
+      toLimit(modelInfo?.max_tokens)
+    const outputLimit =
+      toLimit(modelInfo?.max_output_tokens) ??
+      toLimit(modelInfo?.max_completion_tokens) ??
+      toLimit(modelInfo?.max_tokens)
+
+    output[id] = {
+      id,
+      name:
+        (typeof modelInfo?.name === "string" && modelInfo.name) ||
+        (typeof modelInfo?.model_name === "string" && modelInfo.model_name) ||
+        id,
+      limit: {
+        context: inputLimit,
+        input: inputLimit,
+        output: outputLimit,
+      },
+      cost: {
+        input:
+          toPrice(modelInfo?.input_cost_per_token) ??
+          toPrice(modelInfo?.input_cost_per_input_token),
+        output:
+          toPrice(modelInfo?.output_cost_per_token) ??
+          toPrice(modelInfo?.output_cost_per_output_token),
+      },
+    }
+  }
+
+  return output
+}
+
 const server: Plugin = async () => {
   return {
     config: async (input) => {
@@ -96,6 +231,7 @@ const server: Plugin = async () => {
         options: {
           ...options,
           baseURL: resolvedBaseURL,
+          includeUsage: options.includeUsage ?? true,
           apiKey: configuredAPIKey,
           apikey: configuredAPIKey,
           headers: existingHeaders,
@@ -103,30 +239,13 @@ const server: Plugin = async () => {
       }
 
       try {
-        const response = await fetch(`${resolvedBaseURL}/models`, {
-          method: "GET",
-          headers: buildHeaders(configuredAPIKey),
-        })
+        const liveModels = await fetchLiteLLMModelMap(resolvedBaseURL, configuredAPIKey)
 
-        if (response.ok) {
-          const payload = (await response.json()) as { data?: any[] }
-          const liveModels: Record<string, any> = {}
-
-          for (const item of payload.data ?? []) {
-            const id = getModelID(item)
-            if (!id) continue
-            liveModels[id] = {
-              name: typeof item?.name === "string" ? item.name : id,
-            }
+        if (Object.keys(liveModels).length > 0) {
+          input.provider[PROVIDER_ID].models = {
+            ...liveModels,
+            ...(current.models ?? {}),
           }
-
-          if (Object.keys(liveModels).length > 0) {
-            input.provider[PROVIDER_ID].models = {
-              ...(current.models ?? {}),
-              ...liveModels,
-            }
-          }
-
         }
       } catch {
         // no-op: avoid blocking provider initialization if live discovery fails
@@ -170,113 +289,49 @@ const server: Plugin = async () => {
       id: PROVIDER_ID,
       models: async (provider, ctx) => {
         const baseURL = withV1(provider.options?.baseURL ?? process.env.LITELLM_BASE_URL)
-        const headers: Record<string, string> = {
-          ...buildHeaders(undefined),
-        }
-
         const authKey =
           ctx.auth?.key ||
           resolveAPIKey(provider.options?.apiKey) ||
           resolveAPIKey(provider.options?.apikey) ||
           process.env.LITELLM_API_KEY ||
           process.env.LITELLM_VIRTUAL_KEY
-        if (authKey) headers.Authorization = `Bearer ${authKey}`
 
-        let infoByModelID = new Map<string, any>()
-        try {
-          const infoResponse = await fetch(`${baseURL}/model/info`, {
-            method: "GET",
-            headers,
-          })
-
-          if (infoResponse.ok) {
-            const infoPayload = (await infoResponse.json()) as
-              | { data?: any[]; model_info?: Record<string, any> }
-              | undefined
-
-            if (Array.isArray(infoPayload?.data)) {
-              for (const item of infoPayload.data) {
-                const id = getModelID(item)
-                if (!id) continue
-                infoByModelID.set(id, flattenModelInfo(item))
-              }
-            }
-
-            if (infoPayload?.model_info && typeof infoPayload.model_info === "object") {
-              for (const [id, value] of Object.entries(infoPayload.model_info)) {
-                infoByModelID.set(id, {
-                  ...(infoByModelID.get(id) ?? {}),
-                  ...value,
-                })
-              }
-            }
-          }
-        } catch {
-          infoByModelID = new Map<string, any>()
-        }
-
-        const response = await fetch(`${baseURL}/models`, {
-          method: "GET",
-          headers,
-        })
-
-        if (!response.ok) {
-          throw new Error(`LiteLLM model discovery failed (${response.status})`)
-        }
-
-        const payload = (await response.json()) as { data?: any[] }
-        const output: Record<string, any> = {}
-
-        for (const item of payload.data ?? []) {
-          const id = getModelID(item)
-          if (!id) continue
-
-          const info = infoByModelID.get(id) ?? {}
-          const modelInfo = {
-            ...info,
-            ...flattenModelInfo(item),
-          }
-          const inputLimit =
-            toLimit(modelInfo?.max_input_tokens) ??
-            toLimit(modelInfo?.max_context_tokens) ??
-            toLimit(modelInfo?.context_window) ??
-            toLimit(modelInfo?.max_tokens)
-          const outputLimit = toLimit(modelInfo?.max_output_tokens)
-
-          output[id] = {
-            id,
-            name:
-              (typeof modelInfo?.name === "string" && modelInfo.name) ||
-              (typeof modelInfo?.model_name === "string" && modelInfo.model_name) ||
-              id,
-            limit: {
-              context: inputLimit,
-              input: inputLimit,
-              output: outputLimit,
-            },
-            cost: {
-              input:
-                toPrice(modelInfo?.input_cost_per_token) ??
-                toPrice(modelInfo?.input_cost_per_input_token),
-              output:
-                toPrice(modelInfo?.output_cost_per_token) ??
-                toPrice(modelInfo?.output_cost_per_output_token),
-            },
-          }
-        }
-
-        return output
+        return fetchLiteLLMModelMap(baseURL, authKey)
       },
     },
 
+    "chat.params": async (input, output) => {
+      if (getProviderID(input.provider) !== PROVIDER_ID) return
+
+      const tags = mergeTags(output.options.tags, output.options.metadata?.tags, buildRequestTags(input))
+
+      output.options = {
+        ...output.options,
+        litellm_session_id: input.sessionID,
+        tags,
+        metadata: {
+          ...(output.options.metadata ?? {}),
+          tags,
+          spend_logs_metadata: {
+            ...(output.options.metadata?.spend_logs_metadata ?? {}),
+            ...buildSpendLogsMetadata(input),
+          },
+        },
+      }
+    },
+
     "chat.headers": async (input, output) => {
-      const providerID = input.provider?.info?.id
+      const providerID = getProviderID(input.provider)
       if (providerID !== PROVIDER_ID) return
+
+      const tags = buildRequestTags(input)
 
       output.headers["X-OpenCode-Session-ID"] = input.sessionID
       output.headers["X-OpenCode-Agent"] = input.agent
       output.headers["X-OpenCode-Model"] = input.model.id
       output.headers["X-OpenCode-Provider"] = providerID
+      output.headers["x-litellm-tags"] = tags.join(",")
+      output.headers["x-litellm-spend-logs-metadata"] = JSON.stringify(buildSpendLogsMetadata(input))
       if (input.provider?.source) {
         output.headers["X-OpenCode-Provider-Source"] = input.provider.source
       }
