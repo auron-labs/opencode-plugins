@@ -5,6 +5,7 @@ const PROVIDER_NAME = "LiteLLM"
 const DEFAULT_BASE_URL = "http://localhost:4000/v1"
 
 type LiteLLMModel = Record<string, any>
+type ModelModality = "text" | "audio" | "image" | "video" | "pdf"
 
 const normalizeBaseURL = (value?: string) => {
   const input = (value ?? "").trim()
@@ -24,9 +25,85 @@ const resolveAPIKey = (value: unknown) => {
 
 const getModelID = (item: any) => {
   if (typeof item === "string") return item
-  if (typeof item?.id === "string") return item.id
   if (typeof item?.model_name === "string") return item.model_name
+  if (typeof item?.id === "string") return item.id
+  if (typeof item?.model === "string") return item.model
+  if (typeof item?.litellm_params?.model === "string") return item.litellm_params.model
   return undefined
+}
+
+const toModality = (value: unknown): ModelModality | undefined => {
+  if (typeof value !== "string") return undefined
+  const normalized = value.trim().toLowerCase()
+  if (normalized === "text" || normalized === "audio" || normalized === "image" || normalized === "video" || normalized === "pdf") {
+    return normalized
+  }
+  return undefined
+}
+
+const uniqueModalities = (values: unknown[]) => {
+  const seen = new Set<ModelModality>()
+  const output: ModelModality[] = []
+  for (const value of values) {
+    const modality = toModality(value)
+    if (!modality || seen.has(modality)) continue
+    seen.add(modality)
+    output.push(modality)
+  }
+  return output
+}
+
+const parseModalityArray = (value: unknown) => {
+  if (!Array.isArray(value)) return []
+  return uniqueModalities(value)
+}
+
+const inferModalities = (modelInfo: Record<string, any>) => {
+  const directInput = parseModalityArray(modelInfo.modalities?.input)
+  const directOutput = parseModalityArray(modelInfo.modalities?.output)
+  if (directInput.length > 0 || directOutput.length > 0) {
+    return { input: directInput.length > 0 ? directInput : ["text"], output: directOutput.length > 0 ? directOutput : ["text"] }
+  }
+
+  const input = ["text"] as ModelModality[]
+  const output = ["text"] as ModelModality[]
+
+  if (modelInfo.supports_vision || modelInfo.supports_image_input || modelInfo.supports_images) {
+    input.push("image")
+  }
+  if (modelInfo.supports_pdf_input) {
+    input.push("pdf")
+  }
+  if (modelInfo.supports_audio_input || modelInfo.supports_audio) {
+    input.push("audio")
+  }
+  if (modelInfo.supports_video_input) {
+    input.push("video")
+  }
+  if (modelInfo.supports_audio_output || modelInfo.supports_speech) {
+    output.push("audio")
+  }
+  if (modelInfo.supports_image_output || modelInfo.supports_image_generation) {
+    output.push("image")
+  }
+  if (modelInfo.supports_video_output || modelInfo.supports_video_generation) {
+    output.push("video")
+  }
+
+  return {
+    input: uniqueModalities(input),
+    output: uniqueModalities(output),
+  }
+}
+
+const getModelName = (modelInfo: Record<string, any>, fallbackID: string) => {
+  if (typeof modelInfo?.name === "string" && modelInfo.name.trim()) return modelInfo.name
+  if (typeof modelInfo?.display_name === "string" && modelInfo.display_name.trim()) return modelInfo.display_name
+  if (typeof modelInfo?.model_name === "string" && modelInfo.model_name.trim()) return modelInfo.model_name
+  if (typeof modelInfo?.litellm_params?.model === "string" && modelInfo.litellm_params.model.trim()) {
+    return modelInfo.litellm_params.model
+  }
+  return fallbackID
 }
 
 const getNumber = (value: unknown) => {
@@ -119,6 +196,7 @@ const buildSpendLogsMetadata = (input: {
 const fetchLiteLLMModelMap = async (baseURL: string, apiKey?: string) => {
   const headers = buildHeaders(apiKey)
   let infoByModelID = new Map<string, LiteLLMModel>()
+  let modelInfoItems: LiteLLMModel[] = []
 
   try {
     const infoResponse = await fetch(`${baseURL}/model/info`, {
@@ -132,6 +210,7 @@ const fetchLiteLLMModelMap = async (baseURL: string, apiKey?: string) => {
         | undefined
 
       if (Array.isArray(infoPayload?.data)) {
+        modelInfoItems = infoPayload.data
         for (const item of infoPayload.data) {
           const id = getModelID(item)
           if (!id) continue
@@ -150,6 +229,48 @@ const fetchLiteLLMModelMap = async (baseURL: string, apiKey?: string) => {
     }
   } catch {
     infoByModelID = new Map<string, LiteLLMModel>()
+    modelInfoItems = []
+  }
+
+  if (modelInfoItems.length > 0) {
+    const output: Record<string, any> = {}
+
+    for (const item of modelInfoItems) {
+      const id = getModelID(item)
+      if (!id) continue
+
+      const modelInfo = flattenModelInfo(item)
+      const inputLimit =
+        toLimit(modelInfo?.max_input_tokens) ??
+        toLimit(modelInfo?.max_context_tokens) ??
+        toLimit(modelInfo?.context_window) ??
+        toLimit(modelInfo?.max_tokens)
+      const outputLimit =
+        toLimit(modelInfo?.max_output_tokens) ??
+        toLimit(modelInfo?.max_completion_tokens) ??
+        toLimit(modelInfo?.max_tokens)
+
+      output[id] = {
+        id,
+        name: getModelName(modelInfo, id),
+        modalities: inferModalities(modelInfo),
+        limit: {
+          context: inputLimit,
+          input: inputLimit,
+          output: outputLimit,
+        },
+        cost: {
+          input:
+            toPrice(modelInfo?.input_cost_per_token) ??
+            toPrice(modelInfo?.input_cost_per_input_token),
+          output:
+            toPrice(modelInfo?.output_cost_per_token) ??
+            toPrice(modelInfo?.output_cost_per_output_token),
+        },
+      }
+    }
+
+    if (Object.keys(output).length > 0) return output
   }
 
   const response = await fetch(`${baseURL}/models`, {
@@ -185,10 +306,8 @@ const fetchLiteLLMModelMap = async (baseURL: string, apiKey?: string) => {
 
     output[id] = {
       id,
-      name:
-        (typeof modelInfo?.name === "string" && modelInfo.name) ||
-        (typeof modelInfo?.model_name === "string" && modelInfo.model_name) ||
-        id,
+      name: getModelName(modelInfo, id),
+      modalities: inferModalities(modelInfo),
       limit: {
         context: inputLimit,
         input: inputLimit,
@@ -242,9 +361,22 @@ const server: Plugin = async () => {
         const liveModels = await fetchLiteLLMModelMap(resolvedBaseURL, configuredAPIKey)
 
         if (Object.keys(liveModels).length > 0) {
-          input.provider[PROVIDER_ID].models = {
-            ...liveModels,
+          const mergedModels: Record<string, any> = {
             ...(current.models ?? {}),
+          }
+
+          for (const [modelID, liveModel] of Object.entries(liveModels)) {
+            mergedModels[modelID] = {
+              ...(mergedModels[modelID] ?? {}),
+              ...liveModel,
+              id: liveModel.id,
+              name: liveModel.name,
+              modalities: liveModel.modalities,
+            }
+          }
+
+          input.provider[PROVIDER_ID].models = {
+            ...mergedModels,
           }
         }
       } catch {

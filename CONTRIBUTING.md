@@ -21,7 +21,7 @@ This repository contains OpenCode plugins and related helper scripts. Keep chang
 
 ## Commit style
 
-Use conventional commits where practical (for release-please compatibility), for example:
+Use conventional commits where practical, for example:
 
 - `feat: add header metadata to litellm provider`
 - `fix: handle missing model info payload`

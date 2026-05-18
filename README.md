@@ -14,7 +14,21 @@ Small, focused OpenCode plugins for local provider, tooling, and TUI extensions.
 
 - OpenCode installed and running.
 - Bun available for running TypeScript scripts in this repo.
+- Optional: `mise` for installing the recommended local toolchain.
 - Optional: `ccc` on `PATH` when using the CocoIndex plugin.
+
+## Tooling
+
+If you use `mise`, install the recommended tools with:
+
+```bash
+mise install
+```
+
+This repo currently tracks:
+
+- `bun` for running local scripts
+- `kasetto` for optional agent-skill management
 
 ## Install into OpenCode config
 
@@ -45,15 +59,7 @@ cp provider/litellm.ts ~/.config/opencode/plugins/litellm-provider.ts
 - Keep plugins self-contained and dependency-light.
 - Use TypeScript compatible with OpenCode plugin runtime expectations.
 - Validate plugin behavior in a local OpenCode session.
-
-## Release management
-
-This repository uses `release-please` metadata for tag/changelog management with `vX.X.X` tags.
-
-- Config: `release-please-config.json`
-- Manifest: `.release-please-manifest.json`
-
-If you later want fully automated GitHub releases, add a workflow that runs `release-please` using `${{ secrets.GITHUB_TOKEN }}`.
+- If you use `mise`, run `mise install` once before local development.
 
 ## OSS files
 
