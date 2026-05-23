@@ -1,6 +1,6 @@
 {
   "name": "@depkit/opencode-kandev",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "OpenCode plugin for Kandev project management and task ingestion workflows.",
   "license": "MIT",
   "type": "module",
