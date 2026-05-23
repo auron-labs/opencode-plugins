@@ -1,0 +1,47 @@
+{
+  "name": "@depkit/opencode-kandev",
+  "version": "0.1.0",
+  "description": "OpenCode plugin for Kandev project management and task ingestion workflows.",
+  "license": "MIT",
+  "type": "module",
+  "sideEffects": false,
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "CHANGELOG.md"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "prepublishOnly": "bun run build"
+  },
+  "packageManager": "bun@1.2.23",
+  "publishConfig": {
+    "access": "public"
+  },
+  "devDependencies": {
+    "@types/node": "^22.15.30",
+    "typescript": "^5.8.3"
+  },
+  "keywords": [
+    "opencode",
+    "kandev",
+    "plugin"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/aaronflorey/opencode-plugins.git",
+    "directory": "packages/opencode-kandev"
+  },
+  "bugs": {
+    "url": "https://github.com/aaronflorey/opencode-plugins/issues"
+  },
+  "homepage": "https://github.com/aaronflorey/opencode-plugins/tree/main/packages/opencode-kandev"
+}

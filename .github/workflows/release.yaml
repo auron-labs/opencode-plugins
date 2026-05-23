@@ -10,6 +10,7 @@ on:
 permissions:
   contents: write
   pull-requests: write
+  id-token: write
 
 jobs:
   release-please:
@@ -53,8 +54,54 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-bun-cache-
 
+      - name: Install opencode-kandev package dependencies
+        run: bun install --frozen-lockfile
+        working-directory: packages/opencode-kandev
+
+      - name: Build opencode-kandev package
+        run: bun run build
+        working-directory: packages/opencode-kandev
+
       - name: Lint source files
-        run: bunx oxlint install.ts provider tools plugins tui
+        run: bunx oxlint install.ts provider tools plugins tui packages/opencode-kandev/src
 
       - name: Bundle-check TypeScript entrypoints
-        run: bun build install.ts provider/litellm.ts tools/cocoindex.ts plugins/bun-command-rewrite.ts plugins/git-commit-strip-attribution.ts tui/gsd-status.tsx --outdir /tmp/opencode-plugins-build-check --external @opencode-ai/plugin --external @opencode-ai/plugin/tui --external @opentui/solid --external solid-js
+        run: bun build install.ts provider/litellm.ts tools/cocoindex.ts plugins/bun-command-rewrite.ts plugins/git-commit-strip-attribution.ts tui/gsd-status.tsx packages/opencode-kandev/src/index.ts --outdir /tmp/opencode-plugins-build-check --external @opencode-ai/plugin --external @opencode-ai/plugin/tui --external @opentui/solid --external solid-js
+
+  publish-npm:
+    needs: release-please
+    if: ${{ needs.release-please.outputs.release_created == 'true' }}
+    runs-on: ubuntu-latest
+    environment: npm
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - name: Check out created tag
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.release-please.outputs.tag_name }}
+
+      - name: Set up Node.js for npm publish
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          registry-url: "https://registry.npmjs.org"
+
+      - name: Set up Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: "1.2"
+
+      - name: Install package dependencies
+        run: bun install --frozen-lockfile
+        working-directory: packages/opencode-kandev
+
+      - name: Build package
+        run: bun run build
+        working-directory: packages/opencode-kandev
+
+      - name: Publish @depkit/opencode-kandev to npm with provenance
+        run: npm publish --provenance --access public
+        working-directory: packages/opencode-kandev

@@ -28,8 +28,16 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-bun-cache-
 
+      - name: Install opencode-kandev package dependencies
+        run: bun install --frozen-lockfile
+        working-directory: packages/opencode-kandev
+
+      - name: Build opencode-kandev package
+        run: bun run build
+        working-directory: packages/opencode-kandev
+
       - name: Lint source files
-        run: bunx oxlint install.ts provider tools plugins tui
+        run: bunx oxlint install.ts provider tools plugins tui packages/opencode-kandev/src
 
       - name: Bundle-check TypeScript entrypoints
-        run: bun build install.ts provider/litellm.ts tools/cocoindex.ts plugins/bun-command-rewrite.ts plugins/git-commit-strip-attribution.ts tui/gsd-status.tsx --outdir /tmp/opencode-plugins-build-check --external @opencode-ai/plugin --external @opencode-ai/plugin/tui --external @opentui/solid --external solid-js
+        run: bun build install.ts provider/litellm.ts tools/cocoindex.ts plugins/bun-command-rewrite.ts plugins/git-commit-strip-attribution.ts tui/gsd-status.tsx packages/opencode-kandev/src/index.ts --outdir /tmp/opencode-plugins-build-check --external @opencode-ai/plugin --external @opencode-ai/plugin/tui --external @opentui/solid --external solid-js

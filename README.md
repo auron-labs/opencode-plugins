@@ -4,9 +4,9 @@
 [![CI](https://img.shields.io/github/actions/workflow/status/aaronflorey/opencode-plugins/ci.yaml?branch=main&style=flat-square&label=CI)](https://github.com/aaronflorey/opencode-plugins/actions/workflows/ci.yaml)
 [![Release](https://img.shields.io/github/v/release/aaronflorey/opencode-plugins?display_name=tag&sort=semver&style=flat-square)](https://github.com/aaronflorey/opencode-plugins/releases)
 
-Small, focused OpenCode plugins for local provider, tooling, and TUI extensions.
+Small, focused OpenCode plugins for local provider, tooling, TUI extensions, and standalone npm packages.
 
-This repository is published as source, not as an npm package or standalone CLI binary.
+This repository is primarily published as source, with selected packages also published to npm.
 
 ## What is included
 
@@ -15,6 +15,7 @@ This repository is published as source, not as an npm package or standalone CLI 
 - `plugins/bun-command-rewrite.ts`: Rewrites npm/npx-style shell commands to Bun equivalents inside Bun projects.
 - `plugins/git-commit-strip-attribution.ts`: Removes AI attribution trailers from git commit command strings.
 - `tui/gsd-status.tsx`: TUI status component for `.planning/STATE.md` driven workflows.
+- `packages/opencode-kandev`: Publishable npm package for Kandev project-manager and ingest workflows.
 
 ## Requirements
 
@@ -85,7 +86,7 @@ cp provider/litellm.ts ~/.config/opencode/plugins/litellm-provider.ts
 
 - GitHub Actions runs source lint and Bun bundle checks on pushes and pull requests.
 - `release-please` manages changelog updates, `vX.X.X` tags, and GitHub releases.
-- This repo does not publish to npm, Homebrew, Docker, or other package registries by default.
+- This repo can publish selected packages to npm via GitHub Actions trusted publishing.
 
 ## OSS files
 
