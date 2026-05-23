@@ -12,12 +12,14 @@ This repository contains OpenCode plugins and related helper scripts. Keep chang
 2. Keep plugin IDs stable unless there is a clear migration plan.
 3. Avoid adding dependencies unless they materially simplify maintenance.
 4. Test changes in a local OpenCode session.
+5. Run `mise run check` before opening a pull request when possible.
 
 ## Pull requests
 
 1. Describe what changed and why.
 2. Note any behavior changes for plugin users.
 3. Include manual validation steps you ran.
+4. Mention any OpenCode or local environment assumptions.
 
 ## Commit style
 

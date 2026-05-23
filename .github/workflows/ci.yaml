@@ -1,0 +1,35 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+      - master
+  pull_request:
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: "1.2"
+
+      - name: Cache Bun install cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.bun/install/cache
+          key: ${{ runner.os }}-bun-cache-${{ hashFiles('mise.toml') }}
+          restore-keys: |
+            ${{ runner.os }}-bun-cache-
+
+      - name: Lint source files
+        run: bunx oxlint install.ts provider tools plugins tui
+
+      - name: Bundle-check TypeScript entrypoints
+        run: bun build install.ts provider/litellm.ts tools/cocoindex.ts plugins/bun-command-rewrite.ts plugins/git-commit-strip-attribution.ts tui/gsd-status.tsx --outdir /tmp/opencode-plugins-build-check --external @opencode-ai/plugin --external @opencode-ai/plugin/tui --external @opentui/solid --external solid-js

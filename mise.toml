@@ -1,3 +1,15 @@
 [tools]
-bun = "latest"
+bun = "1.2"
 kasetto = "latest"
+
+[tasks.lint]
+description = "Run zero-config source lint"
+run = "bunx oxlint install.ts provider tools plugins tui"
+
+[tasks.test]
+description = "Bundle-check TypeScript entrypoints"
+run = "bun build install.ts provider/litellm.ts tools/cocoindex.ts plugins/bun-command-rewrite.ts plugins/git-commit-strip-attribution.ts tui/gsd-status.tsx --outdir /tmp/opencode-plugins-build-check --external @opencode-ai/plugin --external @opencode-ai/plugin/tui --external @opentui/solid --external solid-js"
+
+[tasks.check]
+description = "Run local validation checks"
+depends = ["lint", "test"]

@@ -1,0 +1,60 @@
+name: Release
+
+on:
+  push:
+    branches:
+      - main
+      - master
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  release-please:
+    runs-on: ubuntu-latest
+    outputs:
+      release_created: ${{ steps.release.outputs.release_created }}
+      tag_name: ${{ steps.release.outputs.tag_name }}
+
+    steps:
+      - name: Run release-please
+        id: release
+        uses: googleapis/release-please-action@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          config-file: release-please-config.json
+          manifest-file: .release-please-manifest.json
+
+  verify-release:
+    needs: release-please
+    if: ${{ needs.release-please.outputs.release_created == 'true' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Check out created tag
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.release-please.outputs.tag_name }}
+
+      - name: Set up Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: "1.2"
+
+      - name: Cache Bun install cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.bun/install/cache
+          key: ${{ runner.os }}-bun-cache-${{ hashFiles('mise.toml') }}
+          restore-keys: |
+            ${{ runner.os }}-bun-cache-
+
+      - name: Lint source files
+        run: bunx oxlint install.ts provider tools plugins tui
+
+      - name: Bundle-check TypeScript entrypoints
+        run: bun build install.ts provider/litellm.ts tools/cocoindex.ts plugins/bun-command-rewrite.ts plugins/git-commit-strip-attribution.ts tui/gsd-status.tsx --outdir /tmp/opencode-plugins-build-check --external @opencode-ai/plugin --external @opencode-ai/plugin/tui --external @opentui/solid --external solid-js
