@@ -2,6 +2,13 @@
 
 All notable changes to this project are documented in this file.
 
+## [1.3.0](https://github.com/auron-labs/opencode-plugins/compare/@auron/opencode-omniroute-auth-v1.2.2...@auron/opencode-omniroute-auth-v1.3.0) (2026-06-29)
+
+
+### Features
+
+* init ([a1d6a33](https://github.com/auron-labs/opencode-plugins/commit/a1d6a33386e91f64051e375b5e8faecd42409854))
+
 ## [1.2.2] - 2026-05-22
 
 ### Added
