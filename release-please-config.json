@@ -1,0 +1,28 @@
+{
+  "$schema": "https://raw.githubusercontent.com/googleapis/release-please/main/schemas/config.json",
+  "bootstrap-sha": "1c4a37d",
+  "include-v-in-tag": true,
+  "include-component-in-tag": true,
+  "packages": {
+    "packages/opencode-codebase-memory": {
+      "component": "@auron/opencode-codebase-memory",
+      "changelog-path": "CHANGELOG.md",
+      "release-type": "node"
+    },
+    "packages/opencode-improve": {
+      "component": "@auron/opencode-improve",
+      "changelog-path": "CHANGELOG.md",
+      "release-type": "node"
+    },
+    "packages/opencode-omniroute-auth": {
+      "component": "@auron/opencode-omniroute-auth",
+      "changelog-path": "CHANGELOG.md",
+      "release-type": "node"
+    },
+    "packages/opencode-zellij": {
+      "component": "@auron/opencode-zellij",
+      "changelog-path": "CHANGELOG.md",
+      "release-type": "node"
+    }
+  }
+}

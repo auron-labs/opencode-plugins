@@ -1,0 +1,52 @@
+{
+  "name": "@auron/opencode-codebase-memory",
+  "version": "0.1.0",
+  "description": "OpenCode plugin for codebase-memory-mcp with startup indexing for the active project.",
+  "license": "MIT",
+  "type": "module",
+  "sideEffects": false,
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "CHANGELOG.md"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "test": "bun run build && node --test test/*.test.mjs",
+    "prepublishOnly": "bun run build"
+  },
+  "packageManager": "bun@1.2.23",
+  "publishConfig": {
+    "access": "public"
+  },
+  "dependencies": {
+    "@opencode-ai/plugin": "^1.17.9"
+  },
+  "devDependencies": {
+    "@types/node": "^22.15.30",
+    "typescript": "^5.8.3"
+  },
+  "keywords": [
+    "opencode",
+    "codebase-memory",
+    "mcp",
+    "plugin"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/php-depkit/opencode-plugins.git",
+    "directory": "packages/opencode-codebase-memory"
+  },
+  "bugs": {
+    "url": "https://github.com/php-depkit/opencode-plugins/issues"
+  },
+  "homepage": "https://github.com/php-depkit/opencode-plugins/tree/main/packages/opencode-codebase-memory"
+}

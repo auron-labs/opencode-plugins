@@ -1,0 +1,16 @@
+{
+  "private": true,
+  "packageManager": "bun@1.2.23",
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "preinstall": "bunx only-allow bun",
+    "build": "bun run --filter '*' build",
+    "lint": "bash -c 'targets=(); for target in install.ts provider plugins packages; do [ -e \"$target\" ] && targets+=(\"$target\"); done; bunx oxlint \"${targets[@]}\"'",
+    "test": "bun run --filter '*' test && node --test scripts/opencode-smoke.test.mjs",
+    "check": "bun run build && bun run test",
+    "readme": "bun run scripts/update-readme.ts",
+    "smoke:plugin": "node scripts/opencode-smoke.mjs"
+  }
+}

@@ -1,0 +1,1778 @@
+{
+  "object": "list",
+  "data": [
+    {
+      "id": "mimo/mimo-v2.5-pro",
+      "object": "model",
+      "created": 1781837198,
+      "owned_by": "xiaomi-mimo",
+      "permission": [],
+      "root": "mimo-v2.5-pro",
+      "parent": null,
+      "capabilities": {
+        "vision": true,
+        "tool_calling": true,
+        "reasoning": true
+      },
+      "input_modalities": [
+        "text",
+        "image"
+      ],
+      "output_modalities": [
+        "text"
+      ],
+      "context_length": 1048576,
+      "max_output_tokens": 131072,
+      "max_input_tokens": 1048576,
+      "name": "MiMo-V2.5-Pro"
+    },
+    {
+      "id": "xiaomi-mimo/mimo-v2.5-pro",
+      "object": "model",
+      "created": 1781837198,
+      "owned_by": "xiaomi-mimo",
+      "permission": [],
+      "root": "mimo-v2.5-pro",
+      "parent": "mimo/mimo-v2.5-pro",
+      "capabilities": {
+        "vision": true,
+        "tool_calling": true,
+        "reasoning": true
+      },
+      "input_modalities": [
+        "text",
+        "image"
+      ],
+      "output_modalities": [
+        "text"
+      ],
+      "context_length": 1048576,
+      "max_output_tokens": 131072,
+      "max_input_tokens": 1048576,
+      "name": "MiMo-V2.5-Pro"
+    },
+    {
+      "id": "mimo/mimo-v2.5",
+      "object": "model",
+      "created": 1781837198,
+      "owned_by": "xiaomi-mimo",
+      "permission": [],
+      "root": "mimo-v2.5",
+      "parent": null,
+      "capabilities": {
+        "vision": true,
+        "tool_calling": true,
+        "reasoning": true
+      },
+      "input_modalities": [
+        "text",
+        "image"
+      ],
+      "output_modalities": [
+        "text"
+      ],
+      "context_length": 1048576,
+      "max_output_tokens": 131072,
+      "max_input_tokens": 1048576,
+      "name": "MiMo-V2.5"
+    },
+    {
+      "id": "xiaomi-mimo/mimo-v2.5",
+      "object": "model",
+      "created": 1781837198,
+      "owned_by": "xiaomi-mimo",
+      "permission": [],
+      "root": "mimo-v2.5",
+      "parent": "mimo/mimo-v2.5",
+      "capabilities": {
+        "vision": true,
+        "tool_calling": true,
+        "reasoning": true
+      },
+      "input_modalities": [
+        "text",
+        "image"
+      ],
+      "output_modalities": [
+        "text"
+      ],
+      "context_length": 1048576,
+      "max_output_tokens": 131072,
+      "max_input_tokens": 1048576,
+      "name": "MiMo-V2.5"
+    },
+    {
+      "id": "mimo/mimo-v2-flash",
+      "object": "model",
+      "created": 1781837198,
+      "owned_by": "xiaomi-mimo",
+      "permission": [],
+      "root": "mimo-v2-flash",
+      "parent": null,
+      "capabilities": {
+        "tool_calling": true,
+        "reasoning": true
+      },
+      "context_length": 262144,
+      "max_output_tokens": 65536,
+      "max_input_tokens": 262144,
+      "name": "MiMo-V2-Flash"
+    },
+    {
+      "id": "xiaomi-mimo/mimo-v2-flash",
+      "object": "model",
+      "created": 1781837198,
+      "owned_by": "xiaomi-mimo",
+      "permission": [],
+      "root": "mimo-v2-flash",
+      "parent": "mimo/mimo-v2-flash",
+      "capabilities": {
+        "tool_calling": true,
+        "reasoning": true
+      },
+      "context_length": 262144,
+      "max_output_tokens": 65536,
+      "max_input_tokens": 262144,
+      "name": "MiMo-V2-Flash"
+    },
+    {
+      "id": "cmd/moonshotai/Kimi-K2.7-Code",
+      "object": "model",
+      "created": 1781837198,
+      "owned_by": "command-code",
+      "permission": [],
+      "root": "moonshotai/Kimi-K2.7-Code",
+      "parent": null,
+      "context_length": 256000,
+      "capabilities": {
+        "tool_calling": true,
+        "reasoning": true
+      },
+      "max_output_tokens": 8192,
+      "name": "moonshotai/Kimi-K2.7-Code"
+    },
+    {
+      "id": "command-code/moonshotai/Kimi-K2.7-Code",
+      "object": "model",
+      "created": 1781837198,
+      "owned_by": "command-code",
+      "permission": [],
+      "root": "moonshotai/Kimi-K2.7-Code",
+      "parent": "cmd/moonshotai/Kimi-K2.7-Code",
+      "context_length": 256000,
+      "capabilities": {
+        "tool_calling": true,
+        "reasoning": true
+      },
+      "max_output_tokens": 8192,
+      "name": "moonshotai/Kimi-K2.7-Code"
+    },
+    {
+      "id": "cmd/moonshotai/Kimi-K2.7-Code-Highspeed",
+      "object": "model",
+      "created": 1781837198,
+      "owned_by": "command-code",
+      "permission": [],
+      "root": "moonshotai/Kimi-K2.7-Code-Highspeed",
+      "parent": null,
+      "context_length": 262000,
+      "capabilities": {
+        "tool_calling": true,
+        "reasoning": true
+      },
+      "max_output_tokens": 8192,
+      "name": "moonshotai/Kimi-K2.7-Code-Highspeed"
+    },
+    {
+      "id": "command-code/moonshotai/Kimi-K2.7-Code-Highspeed",
+      "object": "model",
+      "created": 1781837198,
+      "owned_by": "command-code",
+      "permission": [],
+      "root": "moonshotai/Kimi-K2.7-Code-Highspeed",
+      "parent": "cmd/moonshotai/Kimi-K2.7-Code-Highspeed",
+      "context_length": 262000,
+      "capabilities": {
+        "tool_calling": true,
+        "reasoning": true
+      },
+      "max_output_tokens": 8192,
+      "name": "moonshotai/Kimi-K2.7-Code-Highspeed"
+    },
+    {
+      "id": "cmd/zai-org/GLM-5.2",
+      "object": "model",
+      "created": 1781837198,
+      "owned_by": "command-code",
+      "permission": [],
+      "root": "zai-org/GLM-5.2",
+      "parent": null,
+      "context_length": 1000000,
+      "capabilities": {
+        "tool_calling": true,
+        "reasoning": true
+      },
+      "max_output_tokens": 8192,
+      "name": "zai-org/GLM-5.2"
+    },
+    {
+      "id": "command-code/zai-org/GLM-5.2",
+      "object": "model",
+      "created": 1781837198,
+      "owned_by": "command-code",
+      "permission": [],
+      "root": "zai-org/GLM-5.2",
+      "parent": "cmd/zai-org/GLM-5.2",
+      "context_length": 1000000,
+      "capabilities": {
+        "tool_calling": true,
+        "reasoning": true
+      },
+      "max_output_tokens": 8192,
+      "name": "zai-org/GLM-5.2"
+    },
+    {
+      "id": "cmd/MiniMaxAI/MiniMax-M3",
+      "object": "model",
+      "created": 1781837198,
+      "owned_by": "command-code",
+      "permission": [],
+      "root": "MiniMaxAI/MiniMax-M3",
+      "parent": null,
+      "context_length": 1000000,
+      "capabilities": {
+        "tool_calling": true,
+        "reasoning": true,
+        "thinking": true
+      },
+      "max_output_tokens": 512000,
+      "max_input_tokens": 1048576,
+      "name": "MiniMaxAI/MiniMax-M3"
+    },
+    {
+      "id": "command-code/MiniMaxAI/MiniMax-M3",
+      "object": "model",
+      "created": 1781837198,
+      "owned_by": "command-code",
+      "permission": [],
+      "root": "MiniMaxAI/MiniMax-M3",
+      "parent": "cmd/MiniMaxAI/MiniMax-M3",
+      "context_length": 1000000,
+      "capabilities": {
+        "tool_calling": true,
+        "reasoning": true,
+        "thinking": true
+      },
+      "max_output_tokens": 512000,
+      "max_input_tokens": 1048576,
+      "name": "MiniMaxAI/MiniMax-M3"
+    },
+    {
+      "id": "cmd/xiaomi/mimo-v2.5-pro",
+      "object": "model",
+      "created": 1781837198,
+      "owned_by": "command-code",
+      "permission": [],
+      "root": "xiaomi/mimo-v2.5-pro",
+      "parent": null,
+      "context_length": 1000000,
+      "capabilities": {
+        "tool_calling": true,
+        "reasoning": true
+      },
+      "max_output_tokens": 8192,
+      "name": "xiaomi/mimo-v2.5-pro"
+    },
+    {
+      "id": "command-code/xiaomi/mimo-v2.5-pro",
+      "object": "model",
+      "created": 1781837198,
+      "owned_by": "command-code",
+      "permission": [],
+      "root": "xiaomi/mimo-v2.5-pro",
+      "parent": "cmd/xiaomi/mimo-v2.5-pro",
+      "context_length": 1000000,
+      "capabilities": {
+        "tool_calling": true,
+        "reasoning": true
+      },
+      "max_output_tokens": 8192,
+      "name": "xiaomi/mimo-v2.5-pro"
+    },
+    {
+      "id": "cmd/xiaomi/mimo-v2.5",
+      "object": "model",
+      "created": 1781837198,
+      "owned_by": "command-code",
+      "permission": [],
+      "root": "xiaomi/mimo-v2.5",
+      "parent": null,
+      "context_length": 1000000,
+      "capabilities": {
+        "tool_calling": true,
+        "reasoning": true
+      },
+      "max_output_tokens": 8192,
+      "name": "xiaomi/mimo-v2.5"
+    },
+    {
+      "id": "command-code/xiaomi/mimo-v2.5",
+      "object": "model",
+      "created": 1781837198,
+      "owned_by": "command-code",
+      "permission": [],
+      "root": "xiaomi/mimo-v2.5",
+      "parent": "cmd/xiaomi/mimo-v2.5",
+      "context_length": 1000000,
+      "capabilities": {
+        "tool_calling": true,
+        "reasoning": true
+      },
+      "max_output_tokens": 8192,
+      "name": "xiaomi/mimo-v2.5"
+    },
+    {
+      "id": "cmd/Qwen/Qwen3.7-Max",
+      "object": "model",
+      "created": 1781837198,
+      "owned_by": "command-code",
+      "permission": [],
+      "root": "Qwen/Qwen3.7-Max",
+      "parent": null,
+      "context_length": 1000000,
+      "capabilities": {
+        "tool_calling": true,
+        "reasoning": true
+      },
+      "max_output_tokens": 8192,
+      "name": "Qwen/Qwen3.7-Max"
+    },
+    {
+      "id": "command-code/Qwen/Qwen3.7-Max",
+      "object": "model",
+      "created": 1781837198,
+      "owned_by": "command-code",
+      "permission": [],
+      "root": "Qwen/Qwen3.7-Max",
+      "parent": "cmd/Qwen/Qwen3.7-Max",
+      "context_length": 1000000,
+      "capabilities": {
+        "tool_calling": true,
+        "reasoning": true
+      },
+      "max_output_tokens": 8192,
+      "name": "Qwen/Qwen3.7-Max"
+    },
+    {
+      "id": "cmd/Qwen/Qwen3.7-Plus",
+      "object": "model",
+      "created": 1781837198,
+      "owned_by": "command-code",
+      "permission": [],
+      "root": "Qwen/Qwen3.7-Plus",
+      "parent": null,
+      "context_length": 1000000,
+      "capabilities": {
+        "tool_calling": true,
+        "reasoning": true
+      },
+      "max_output_tokens": 8192,
+      "name": "Qwen/Qwen3.7-Plus"
+    },
+    {
+      "id": "command-code/Qwen/Qwen3.7-Plus",
+      "object": "model",
+      "created": 1781837198,
+      "owned_by": "command-code",
+      "permission": [],
+      "root": "Qwen/Qwen3.7-Plus",
+      "parent": "cmd/Qwen/Qwen3.7-Plus",
+      "context_length": 1000000,
+      "capabilities": {
+        "tool_calling": true,
+        "reasoning": true
+      },
+      "max_output_tokens": 8192,
+      "name": "Qwen/Qwen3.7-Plus"
+    },
+    {
+      "id": "cmd/stepfun/Step-3.7-Flash",
+      "object": "model",
+      "created": 1781837198,
+      "owned_by": "command-code",
+      "permission": [],
+      "root": "stepfun/Step-3.7-Flash",
+      "parent": null,
+      "context_length": 256000,
+      "capabilities": {
+        "tool_calling": true,
+        "reasoning": true
+      },
+      "max_output_tokens": 8192,
+      "name": "stepfun/Step-3.7-Flash"
+    },
+    {
+      "id": "command-code/stepfun/Step-3.7-Flash",
+      "object": "model",
+      "created": 1781837198,
+      "owned_by": "command-code",
+      "permission": [],
+      "root": "stepfun/Step-3.7-Flash",
+      "parent": "cmd/stepfun/Step-3.7-Flash",
+      "context_length": 256000,
+      "capabilities": {
+        "tool_calling": true,
+        "reasoning": true
+      },
+      "max_output_tokens": 8192,
+      "name": "stepfun/Step-3.7-Flash"
+    },
+    {
+      "id": "cmd/stepfun/Step-3.5-Flash",
+      "object": "model",
+      "created": 1781837198,
+      "owned_by": "command-code",
+      "permission": [],
+      "root": "stepfun/Step-3.5-Flash",
+      "parent": null,
+      "context_length": 1000000,
+      "capabilities": {
+        "tool_calling": true,
+        "reasoning": true
+      },
+      "max_output_tokens": 8192,
+      "name": "stepfun/Step-3.5-Flash"
+    },
+    {
+      "id": "command-code/stepfun/Step-3.5-Flash",
+      "object": "model",
+      "created": 1781837198,
+      "owned_by": "command-code",
+      "permission": [],
+      "root": "stepfun/Step-3.5-Flash",
+      "parent": "cmd/stepfun/Step-3.5-Flash",
+      "context_length": 1000000,
+      "capabilities": {
+        "tool_calling": true,
+        "reasoning": true
+      },
+      "max_output_tokens": 8192,
+      "name": "stepfun/Step-3.5-Flash"
+    },
+    {
+      "id": "cmd/google/gemini-3.5-flash",
+      "object": "model",
+      "created": 1781837198,
+      "owned_by": "command-code",
+      "permission": [],
+      "root": "google/gemini-3.5-flash",
+      "parent": null,
+      "context_length": 1000000,
+      "capabilities": {
+        "tool_calling": true,
+        "reasoning": true
+      },
+      "max_output_tokens": 8192,
+      "name": "google/gemini-3.5-flash"
+    },
+    {
+      "id": "command-code/google/gemini-3.5-flash",
+      "object": "model",
+      "created": 1781837198,
+      "owned_by": "command-code",
+      "permission": [],
+      "root": "google/gemini-3.5-flash",
+      "parent": "cmd/google/gemini-3.5-flash",
+      "context_length": 1000000,
+      "capabilities": {
+        "tool_calling": true,
+        "reasoning": true
+      },
+      "max_output_tokens": 8192,
+      "name": "google/gemini-3.5-flash"
+    },
+    {
+      "id": "cmd/google/gemini-3.1-flash-lite",
+      "object": "model",
+      "created": 1781837198,
+      "owned_by": "command-code",
+      "permission": [],
+      "root": "google/gemini-3.1-flash-lite",
+      "parent": null,
+      "context_length": 1000000,
+      "capabilities": {
+        "tool_calling": true,
+        "reasoning": true
+      },
+      "max_output_tokens": 8192,
+      "name": "google/gemini-3.1-flash-lite"
+    },
+    {
+      "id": "command-code/google/gemini-3.1-flash-lite",
+      "object": "model",
+      "created": 1781837198,
+      "owned_by": "command-code",
+      "permission": [],
+      "root": "google/gemini-3.1-flash-lite",
+      "parent": "cmd/google/gemini-3.1-flash-lite",
+      "context_length": 1000000,
+      "capabilities": {
+        "tool_calling": true,
+        "reasoning": true
+      },
+      "max_output_tokens": 8192,
+      "name": "google/gemini-3.1-flash-lite"
+    },
+    {
+      "id": "cmd/nvidia/nemotron-3-ultra-550b-a55b",
+      "object": "model",
+      "created": 1781837198,
+      "owned_by": "command-code",
+      "permission": [],
+      "root": "nvidia/nemotron-3-ultra-550b-a55b",
+      "parent": null,
+      "context_length": 1000000,
+      "capabilities": {
+        "tool_calling": true,
+        "reasoning": true
+      },
+      "max_output_tokens": 8192,
+      "name": "nvidia/nemotron-3-ultra-550b-a55b"
+    },
+    {
+      "id": "command-code/nvidia/nemotron-3-ultra-550b-a55b",
+      "object": "model",
+      "created": 1781837198,
+      "owned_by": "command-code",
+      "permission": [],
+      "root": "nvidia/nemotron-3-ultra-550b-a55b",
+      "parent": "cmd/nvidia/nemotron-3-ultra-550b-a55b",
+      "context_length": 1000000,
+      "capabilities": {
+        "tool_calling": true,
+        "reasoning": true
+      },
+      "max_output_tokens": 8192,
+      "name": "nvidia/nemotron-3-ultra-550b-a55b"
+    },
+    {
+      "id": "opencode-go/minimax-m3",
+      "object": "model",
+      "created": 1781837198,
+      "owned_by": "opencode-go",
+      "permission": [],
+      "root": "minimax-m3",
+      "parent": null,
+      "capabilities": {
+        "vision": false,
+        "tool_calling": true,
+        "reasoning": true,
+        "thinking": true,
+        "attachment": false,
+        "temperature": true
+      },
+      "input_modalities": [
+        "text",
+        "image",
+        "video"
+      ],
+      "output_modalities": [
+        "text"
+      ],
+      "context_length": 512000,
+      "max_output_tokens": 131072,
+      "max_input_tokens": 512000,
+      "family": "minimax-m3",
+      "knowledge_cutoff": "2025-01",
+      "release_date": "2026-05-31",
+      "last_updated": "2026-05-31",
+      "open_weights": true,
+      "name": "MiniMax M3"
+    },
+    {
+      "id": "opencode-go/minimax-m2.7",
+      "object": "model",
+      "created": 1781837198,
+      "owned_by": "opencode-go",
+      "permission": [],
+      "root": "minimax-m2.7",
+      "parent": null,
+      "capabilities": {
+        "vision": false,
+        "tool_calling": true,
+        "reasoning": true,
+        "thinking": true,
+        "attachment": false,
+        "temperature": true
+      },
+      "input_modalities": [
+        "text"
+      ],
+      "output_modalities": [
+        "text"
+      ],
+      "context_length": 204800,
+      "max_output_tokens": 131072,
+      "max_input_tokens": 204800,
+      "family": "minimax-m2.7",
+      "knowledge_cutoff": "2025-01",
+      "release_date": "2026-03-18",
+      "last_updated": "2026-03-18",
+      "open_weights": true,
+      "name": "MiniMax M2.7"
+    },
+    {
+      "id": "opencode-go/minimax-m2.5",
+      "object": "model",
+      "created": 1781837198,
+      "owned_by": "opencode-go",
+      "permission": [],
+      "root": "minimax-m2.5",
+      "parent": null,
+      "capabilities": {
+        "vision": false,
+        "tool_calling": true,
+        "reasoning": true,
+        "thinking": true,
+        "attachment": false,
+        "temperature": true
+      },
+      "input_modalities": [
+        "text"
+      ],
+      "output_modalities": [
+        "text"
+      ],
+      "context_length": 204800,
+      "max_output_tokens": 65536,
+      "max_input_tokens": 204800,
+      "family": "minimax-m2.5",
+      "status": "deprecated",
+      "knowledge_cutoff": "2025-01",
+      "release_date": "2026-02-12",
+      "last_updated": "2026-02-12",
+      "open_weights": true,
+      "name": "MiniMax M2.5"
+    },
+    {
+      "id": "opencode-go/kimi-k2.7-code",
+      "object": "model",
+      "created": 1781837198,
+      "owned_by": "opencode-go",
+      "permission": [],
+      "root": "kimi-k2.7-code",
+      "parent": null,
+      "capabilities": {
+        "vision": true,
+        "tool_calling": true,
+        "reasoning": true,
+        "thinking": true,
+        "attachment": true,
+        "structured_output": true,
+        "temperature": false
+      },
+      "input_modalities": [
+        "text",
+        "image",
+        "video"
+      ],
+      "output_modalities": [
+        "text"
+      ],
+      "context_length": 262144,
+      "max_output_tokens": 262144,
+      "max_input_tokens": 262144,
+      "family": "kimi-k2",
+      "knowledge_cutoff": "2025-01",
+      "release_date": "2026-06-12",
+      "last_updated": "2026-06-12",
+      "open_weights": true,
+      "name": "kimi-k2.7-code"
+    },
+    {
+      "id": "opencode-go/kimi-k2.6",
+      "object": "model",
+      "created": 1781837198,
+      "owned_by": "opencode-go",
+      "permission": [],
+      "root": "kimi-k2.6",
+      "parent": null,
+      "capabilities": {
+        "vision": true,
+        "tool_calling": true,
+        "reasoning": true,
+        "thinking": true,
+        "attachment": true,
+        "temperature": true
+      },
+      "input_modalities": [
+        "text",
+        "image",
+        "video"
+      ],
+      "output_modalities": [
+        "text"
+      ],
+      "context_length": 262144,
+      "max_output_tokens": 65536,
+      "max_input_tokens": 262144,
+      "family": "kimi-k2",
+      "knowledge_cutoff": "2024-10",
+      "release_date": "2026-04-21",
+      "last_updated": "2026-04-21",
+      "open_weights": true,
+      "name": "Kimi K2.6"
+    },
+    {
+      "id": "opencode-go/kimi-k2.5",
+      "object": "model",
+      "created": 1781837198,
+      "owned_by": "opencode-go",
+      "permission": [],
+      "root": "kimi-k2.5",
+      "parent": null,
+      "capabilities": {
+        "vision": true,
+        "tool_calling": true,
+        "reasoning": true,
+        "thinking": true,
+        "attachment": true,
+        "temperature": true
+      },
+      "input_modalities": [
+        "text",
+        "image",
+        "video"
+      ],
+      "output_modalities": [
+        "text"
+      ],
+      "context_length": 262144,
+      "max_output_tokens": 65536,
+      "max_input_tokens": 262144,
+      "family": "kimi-k2",
+      "status": "deprecated",
+      "knowledge_cutoff": "2024-10",
+      "release_date": "2026-01-27",
+      "last_updated": "2026-01-27",
+      "open_weights": true,
+      "name": "Kimi K2.5"
+    },
+    {
+      "id": "opencode-go/glm-5.1",
+      "object": "model",
+      "created": 1781837198,
+      "owned_by": "opencode-go",
+      "permission": [],
+      "root": "glm-5.1",
+      "parent": null,
+      "capabilities": {
+        "vision": false,
+        "tool_calling": true,
+        "reasoning": true,
+        "thinking": true,
+        "attachment": false,
+        "temperature": true
+      },
+      "input_modalities": [
+        "text"
+      ],
+      "output_modalities": [
+        "text"
+      ],
+      "context_length": 202752,
+      "max_output_tokens": 32768,
+      "max_input_tokens": 202752,
+      "family": "glm",
+      "knowledge_cutoff": "2025-04",
+      "release_date": "2026-04-07",
+      "last_updated": "2026-04-07",
+      "open_weights": true,
+      "name": "GLM-5.1"
+    },
+    {
+      "id": "opencode-go/glm-5",
+      "object": "model",
+      "created": 1781837198,
+      "owned_by": "opencode-go",
+      "permission": [],
+      "root": "glm-5",
+      "parent": null,
+      "capabilities": {
+        "vision": false,
+        "tool_calling": true,
+        "reasoning": true,
+        "thinking": true,
+        "attachment": false,
+        "temperature": true
+      },
+      "input_modalities": [
+        "text"
+      ],
+      "output_modalities": [
+        "text"
+      ],
+      "context_length": 202752,
+      "max_output_tokens": 32768,
+      "max_input_tokens": 202752,
+      "family": "glm",
+      "knowledge_cutoff": "2025-04",
+      "release_date": "2026-02-11",
+      "last_updated": "2026-02-11",
+      "open_weights": true,
+      "name": "GLM-5"
+    },
+    {
+      "id": "opencode-go/deepseek-v4-pro",
+      "object": "model",
+      "created": 1781837198,
+      "owned_by": "opencode-go",
+      "permission": [],
+      "root": "deepseek-v4-pro",
+      "parent": null,
+      "capabilities": {
+        "vision": false,
+        "tool_calling": true,
+        "reasoning": true,
+        "thinking": true,
+        "attachment": false,
+        "structured_output": true,
+        "temperature": true
+      },
+      "input_modalities": [
+        "text"
+      ],
+      "output_modalities": [
+        "text"
+      ],
+      "context_length": 1000000,
+      "max_output_tokens": 384000,
+      "max_input_tokens": 1000000,
+      "family": "deepseek-thinking",
+      "knowledge_cutoff": "2025-05",
+      "release_date": "2026-04-24",
+      "last_updated": "2026-04-24",
+      "open_weights": true,
+      "name": "DeepSeek V4 Pro"
+    },
+    {
+      "id": "opencode-go/deepseek-v4-flash",
+      "object": "model",
+      "created": 1781837198,
+      "owned_by": "opencode-go",
+      "permission": [],
+      "root": "deepseek-v4-flash",
+      "parent": null,
+      "capabilities": {
+        "vision": false,
+        "tool_calling": true,
+        "reasoning": true,
+        "thinking": true,
+        "attachment": false,
+        "structured_output": true,
+        "temperature": true
+      },
+      "input_modalities": [
+        "text"
+      ],
+      "output_modalities": [
+        "text"
+      ],
+      "context_length": 1000000,
+      "max_output_tokens": 384000,
+      "max_input_tokens": 1000000,
+      "family": "deepseek-flash",
+      "knowledge_cutoff": "2025-05",
+      "release_date": "2026-04-24",
+      "last_updated": "2026-04-24",
+      "open_weights": true,
+      "name": "DeepSeek V4 Flash"
+    },
+    {
+      "id": "opencode-go/qwen3.7-max",
+      "object": "model",
+      "created": 1781837198,
+      "owned_by": "opencode-go",
+      "permission": [],
+      "root": "qwen3.7-max",
+      "parent": null,
+      "capabilities": {
+        "vision": false,
+        "tool_calling": true,
+        "reasoning": true,
+        "thinking": true,
+        "attachment": false,
+        "temperature": true
+      },
+      "input_modalities": [
+        "text"
+      ],
+      "output_modalities": [
+        "text"
+      ],
+      "context_length": 1000000,
+      "max_output_tokens": 65536,
+      "max_input_tokens": 1000000,
+      "family": "qwen3.7-max",
+      "release_date": "2026-05-21",
+      "last_updated": "2026-05-21",
+      "open_weights": false,
+      "name": "Qwen3.7 Max"
+    },
+    {
+      "id": "opencode-go/qwen3.7-plus",
+      "object": "model",
+      "created": 1781837198,
+      "owned_by": "opencode-go",
+      "permission": [],
+      "root": "qwen3.7-plus",
+      "parent": null,
+      "capabilities": {
+        "vision": true,
+        "tool_calling": true,
+        "reasoning": true,
+        "thinking": true,
+        "attachment": true,
+        "temperature": true
+      },
+      "input_modalities": [
+        "text",
+        "image",
+        "video"
+      ],
+      "output_modalities": [
+        "text"
+      ],
+      "context_length": 1000000,
+      "max_output_tokens": 65536,
+      "max_input_tokens": 1000000,
+      "family": "qwen3.7-plus",
+      "release_date": "2026-06-02",
+      "last_updated": "2026-06-02",
+      "open_weights": false,
+      "name": "qwen3.7-plus"
+    },
+    {
+      "id": "opencode-go/qwen3.6-plus",
+      "object": "model",
+      "created": 1781837198,
+      "owned_by": "opencode-go",
+      "permission": [],
+      "root": "qwen3.6-plus",
+      "parent": null,
+      "capabilities": {
+        "vision": true,
+        "tool_calling": true,
+        "reasoning": true,
+        "thinking": true,
+        "attachment": true,
+        "temperature": true
+      },
+      "input_modalities": [
+        "text",
+        "image",
+        "video"
+      ],
+      "output_modalities": [
+        "text"
+      ],
+      "context_length": 1000000,
+      "max_output_tokens": 65536,
+      "max_input_tokens": 1000000,
+      "family": "qwen3.6",
+      "knowledge_cutoff": "2025-04",
+      "release_date": "2026-04-02",
+      "last_updated": "2026-04-02",
+      "open_weights": false,
+      "name": "Qwen3.6 Plus"
+    },
+    {
+      "id": "opencode-go/qwen3.5-plus",
+      "object": "model",
+      "created": 1781837198,
+      "owned_by": "opencode-go",
+      "permission": [],
+      "root": "qwen3.5-plus",
+      "parent": null,
+      "capabilities": {
+        "vision": true,
+        "tool_calling": true,
+        "reasoning": true,
+        "thinking": true,
+        "attachment": true,
+        "temperature": true
+      },
+      "input_modalities": [
+        "text",
+        "image",
+        "video"
+      ],
+      "output_modalities": [
+        "text"
+      ],
+      "context_length": 262144,
+      "max_output_tokens": 65536,
+      "max_input_tokens": 262144,
+      "family": "qwen3.5",
+      "status": "deprecated",
+      "knowledge_cutoff": "2025-04",
+      "release_date": "2026-02-16",
+      "last_updated": "2026-02-16",
+      "open_weights": false,
+      "name": "Qwen3.5 Plus"
+    },
+    {
+      "id": "opencode-go/mimo-v2-pro",
+      "object": "model",
+      "created": 1781837198,
+      "owned_by": "opencode-go",
+      "permission": [],
+      "root": "mimo-v2-pro",
+      "parent": null,
+      "capabilities": {
+        "vision": true,
+        "tool_calling": true,
+        "reasoning": true,
+        "thinking": true,
+        "attachment": true,
+        "temperature": true
+      },
+      "input_modalities": [
+        "text"
+      ],
+      "output_modalities": [
+        "text"
+      ],
+      "context_length": 1048576,
+      "max_output_tokens": 128000,
+      "max_input_tokens": 1048576,
+      "family": "mimo-v2-pro",
+      "status": "deprecated",
+      "knowledge_cutoff": "2024-12",
+      "release_date": "2026-03-18",
+      "last_updated": "2026-03-18",
+      "open_weights": true,
+      "name": "MiMo-V2-Pro"
+    },
+    {
+      "id": "opencode-go/mimo-v2-omni",
+      "object": "model",
+      "created": 1781837198,
+      "owned_by": "opencode-go",
+      "permission": [],
+      "root": "mimo-v2-omni",
+      "parent": null,
+      "capabilities": {
+        "vision": true,
+        "tool_calling": true,
+        "reasoning": true,
+        "thinking": true,
+        "attachment": true,
+        "temperature": true
+      },
+      "input_modalities": [
+        "text",
+        "image",
+        "audio",
+        "pdf"
+      ],
+      "output_modalities": [
+        "text"
+      ],
+      "context_length": 262144,
+      "max_output_tokens": 128000,
+      "max_input_tokens": 262144,
+      "family": "mimo-v2-omni",
+      "status": "deprecated",
+      "knowledge_cutoff": "2024-12",
+      "release_date": "2026-03-18",
+      "last_updated": "2026-03-18",
+      "open_weights": true,
+      "name": "MiMo-V2-Omni"
+    },
+    {
+      "id": "opencode-go/mimo-v2.5-pro",
+      "object": "model",
+      "created": 1781837198,
+      "owned_by": "opencode-go",
+      "permission": [],
+      "root": "mimo-v2.5-pro",
+      "parent": null,
+      "capabilities": {
+        "vision": true,
+        "tool_calling": true,
+        "reasoning": true,
+        "thinking": true,
+        "attachment": true,
+        "temperature": true
+      },
+      "input_modalities": [
+        "text"
+      ],
+      "output_modalities": [
+        "text"
+      ],
+      "context_length": 1048576,
+      "max_output_tokens": 128000,
+      "max_input_tokens": 1048576,
+      "family": "mimo-v2.5-pro",
+      "knowledge_cutoff": "2024-12",
+      "release_date": "2026-04-22",
+      "last_updated": "2026-04-22",
+      "open_weights": true,
+      "name": "MiMo-V2.5-Pro"
+    },
+    {
+      "id": "opencode-go/mimo-v2.5",
+      "object": "model",
+      "created": 1781837198,
+      "owned_by": "opencode-go",
+      "permission": [],
+      "root": "mimo-v2.5",
+      "parent": null,
+      "capabilities": {
+        "vision": true,
+        "tool_calling": true,
+        "reasoning": true,
+        "thinking": true,
+        "attachment": true,
+        "temperature": true
+      },
+      "input_modalities": [
+        "text",
+        "image",
+        "audio",
+        "video"
+      ],
+      "output_modalities": [
+        "text"
+      ],
+      "context_length": 1000000,
+      "max_output_tokens": 128000,
+      "max_input_tokens": 1000000,
+      "family": "mimo-v2.5",
+      "knowledge_cutoff": "2024-12",
+      "release_date": "2026-04-22",
+      "last_updated": "2026-04-22",
+      "open_weights": true,
+      "name": "MiMo-V2.5"
+    },
+    {
+      "id": "opencode-go/hy3-preview",
+      "object": "model",
+      "created": 1781837198,
+      "owned_by": "opencode-go",
+      "permission": [],
+      "root": "hy3-preview",
+      "parent": null,
+      "capabilities": {
+        "tool_calling": true,
+        "reasoning": true,
+        "thinking": true
+      },
+      "context_length": 262144,
+      "max_output_tokens": 262144,
+      "max_input_tokens": 262144,
+      "name": "Hunyuan3 Preview"
+    },
+    {
+      "id": "openrouter/z-ai/glm-5.2",
+      "object": "model",
+      "created": 1781837198,
+      "owned_by": "openrouter",
+      "permission": [],
+      "root": "z-ai/glm-5.2",
+      "parent": null,
+      "context_length": 1048576,
+      "max_output_tokens": 131072,
+      "capabilities": {
+        "vision": false,
+        "tool_calling": true,
+        "reasoning": true,
+        "thinking": true,
+        "attachment": false,
+        "structured_output": false,
+        "temperature": true
+      },
+      "input_modalities": [
+        "text"
+      ],
+      "output_modalities": [
+        "text"
+      ],
+      "max_input_tokens": 1048576,
+      "family": "glm",
+      "release_date": "2026-06-13",
+      "last_updated": "2026-06-13",
+      "open_weights": false,
+      "name": "z-ai/glm-5.2"
+    },
+    {
+      "id": "openrouter/moonshotai/kimi-k2.7-code",
+      "object": "model",
+      "created": 1781837198,
+      "owned_by": "openrouter",
+      "permission": [],
+      "root": "moonshotai/kimi-k2.7-code",
+      "parent": null,
+      "context_length": 262144,
+      "max_output_tokens": 262144,
+      "capabilities": {
+        "vision": true,
+        "tool_calling": true,
+        "reasoning": true,
+        "thinking": true,
+        "attachment": true,
+        "structured_output": true,
+        "temperature": true
+      },
+      "input_modalities": [
+        "text",
+        "image"
+      ],
+      "output_modalities": [
+        "text"
+      ],
+      "max_input_tokens": 262144,
+      "family": "kimi-k2",
+      "knowledge_cutoff": "2025-01",
+      "release_date": "2026-06-12",
+      "last_updated": "2026-06-12",
+      "open_weights": true,
+      "name": "moonshotai/kimi-k2.7-code"
+    },
+    {
+      "id": "openrouter/qwen/qwen3.7-plus",
+      "object": "model",
+      "created": 1781837198,
+      "owned_by": "openrouter",
+      "permission": [],
+      "root": "qwen/qwen3.7-plus",
+      "parent": null,
+      "context_length": 1000000,
+      "max_output_tokens": 65536,
+      "capabilities": {
+        "vision": true,
+        "tool_calling": true,
+        "reasoning": true,
+        "thinking": true,
+        "attachment": true,
+        "structured_output": true,
+        "temperature": true
+      },
+      "input_modalities": [
+        "text",
+        "image"
+      ],
+      "output_modalities": [
+        "text"
+      ],
+      "max_input_tokens": 1000000,
+      "family": "qwen",
+      "knowledge_cutoff": "2025-04",
+      "release_date": "2026-06-02",
+      "last_updated": "2026-06-02",
+      "open_weights": false,
+      "name": "qwen/qwen3.7-plus"
+    },
+    {
+      "id": "openrouter/stepfun/step-3.7-flash",
+      "object": "model",
+      "created": 1781837198,
+      "owned_by": "openrouter",
+      "permission": [],
+      "root": "stepfun/step-3.7-flash",
+      "parent": null,
+      "context_length": 256000,
+      "max_output_tokens": 256000,
+      "capabilities": {
+        "vision": true,
+        "tool_calling": true,
+        "reasoning": true,
+        "thinking": true,
+        "attachment": true,
+        "structured_output": true,
+        "temperature": true
+      },
+      "input_modalities": [
+        "text",
+        "image",
+        "video"
+      ],
+      "output_modalities": [
+        "text"
+      ],
+      "max_input_tokens": 256000,
+      "knowledge_cutoff": "2026-01-01",
+      "release_date": "2026-05-29",
+      "last_updated": "2026-05-29",
+      "open_weights": true,
+      "name": "stepfun/step-3.7-flash"
+    },
+    {
+      "id": "openrouter/qwen/qwen3.7-max",
+      "object": "model",
+      "created": 1781837198,
+      "owned_by": "openrouter",
+      "permission": [],
+      "root": "qwen/qwen3.7-max",
+      "parent": null,
+      "context_length": 1000000,
+      "max_output_tokens": 65536,
+      "capabilities": {
+        "vision": false,
+        "tool_calling": true,
+        "reasoning": true,
+        "thinking": true,
+        "attachment": false,
+        "structured_output": true,
+        "temperature": true
+      },
+      "input_modalities": [
+        "text"
+      ],
+      "output_modalities": [
+        "text"
+      ],
+      "max_input_tokens": 1000000,
+      "family": "qwen",
+      "release_date": "2026-05-21",
+      "last_updated": "2026-05-21",
+      "open_weights": false,
+      "name": "qwen/qwen3.7-max"
+    },
+    {
+      "id": "openrouter/google/gemini-3.5-flash",
+      "object": "model",
+      "created": 1781837198,
+      "owned_by": "openrouter",
+      "permission": [],
+      "root": "google/gemini-3.5-flash",
+      "parent": null,
+      "context_length": 1048576,
+      "max_output_tokens": 65536,
+      "capabilities": {
+        "vision": true,
+        "tool_calling": true,
+        "reasoning": true,
+        "thinking": true,
+        "attachment": true,
+        "structured_output": true,
+        "temperature": true
+      },
+      "input_modalities": [
+        "text",
+        "image",
+        "video",
+        "audio",
+        "pdf"
+      ],
+      "output_modalities": [
+        "text"
+      ],
+      "max_input_tokens": 1048576,
+      "family": "gemini-flash",
+      "knowledge_cutoff": "2025-01",
+      "release_date": "2026-05-19",
+      "last_updated": "2026-05-19",
+      "open_weights": false,
+      "name": "google/gemini-3.5-flash"
+    },
+    {
+      "id": "openrouter/google/gemini-3.1-flash-lite",
+      "object": "model",
+      "created": 1781837198,
+      "owned_by": "openrouter",
+      "permission": [],
+      "root": "google/gemini-3.1-flash-lite",
+      "parent": null,
+      "context_length": 1048576,
+      "max_output_tokens": 65536,
+      "capabilities": {
+        "vision": true,
+        "tool_calling": true,
+        "reasoning": true,
+        "thinking": true,
+        "attachment": true,
+        "structured_output": true,
+        "temperature": true
+      },
+      "input_modalities": [
+        "text",
+        "image",
+        "video",
+        "audio",
+        "pdf"
+      ],
+      "output_modalities": [
+        "text"
+      ],
+      "max_input_tokens": 1048576,
+      "family": "gemini-flash-lite",
+      "knowledge_cutoff": "2025-01",
+      "release_date": "2026-05-07",
+      "last_updated": "2026-05-07",
+      "open_weights": false,
+      "name": "google/gemini-3.1-flash-lite"
+    },
+    {
+      "id": "openrouter/qwen/qwen3.6-flash",
+      "object": "model",
+      "created": 1781837198,
+      "owned_by": "openrouter",
+      "permission": [],
+      "root": "qwen/qwen3.6-flash",
+      "parent": null,
+      "context_length": 1000000,
+      "max_output_tokens": 65536,
+      "capabilities": {
+        "vision": true,
+        "tool_calling": true,
+        "reasoning": true,
+        "thinking": true,
+        "attachment": true,
+        "structured_output": true,
+        "temperature": true
+      },
+      "input_modalities": [
+        "text",
+        "image",
+        "video"
+      ],
+      "output_modalities": [
+        "text"
+      ],
+      "max_input_tokens": 1000000,
+      "family": "qwen3.6",
+      "release_date": "2026-04-27",
+      "last_updated": "2026-04-27",
+      "open_weights": false,
+      "name": "qwen/qwen3.6-flash"
+    },
+    {
+      "id": "openrouter/moonshotai/kimi-k2.6",
+      "object": "model",
+      "created": 1781837198,
+      "owned_by": "openrouter",
+      "permission": [],
+      "root": "moonshotai/kimi-k2.6",
+      "parent": null,
+      "context_length": 262144,
+      "max_output_tokens": 262142,
+      "capabilities": {
+        "vision": true,
+        "tool_calling": true,
+        "reasoning": true,
+        "thinking": true,
+        "attachment": true,
+        "structured_output": true,
+        "temperature": true
+      },
+      "input_modalities": [
+        "text",
+        "image"
+      ],
+      "output_modalities": [
+        "text"
+      ],
+      "max_input_tokens": 262142,
+      "family": "kimi-k2",
+      "knowledge_cutoff": "2025-01",
+      "release_date": "2026-04-21",
+      "last_updated": "2026-04-21",
+      "open_weights": true,
+      "name": "moonshotai/kimi-k2.6"
+    },
+    {
+      "id": "openrouter/z-ai/glm-5.1",
+      "object": "model",
+      "created": 1781837198,
+      "owned_by": "openrouter",
+      "permission": [],
+      "root": "z-ai/glm-5.1",
+      "parent": null,
+      "context_length": 202752,
+      "capabilities": {
+        "vision": false,
+        "tool_calling": true,
+        "reasoning": true,
+        "thinking": true,
+        "attachment": false,
+        "structured_output": true,
+        "temperature": true
+      },
+      "input_modalities": [
+        "text"
+      ],
+      "output_modalities": [
+        "text"
+      ],
+      "max_output_tokens": 131072,
+      "max_input_tokens": 202752,
+      "family": "glm",
+      "release_date": "2026-03-27",
+      "last_updated": "2026-03-27",
+      "open_weights": true,
+      "name": "z-ai/glm-5.1"
+    },
+    {
+      "id": "openrouter/openai/text-embedding-3-small",
+      "object": "model",
+      "created": 1781837198,
+      "owned_by": "openrouter",
+      "root": "text-embedding-3-small",
+      "type": "embedding",
+      "dimensions": 1536,
+      "capabilities": {
+        "tool_calling": true,
+        "reasoning": true
+      },
+      "max_output_tokens": 8192,
+      "name": "text-embedding-3-small"
+    },
+    {
+      "id": "openrouter/openai/text-embedding-3-large",
+      "object": "model",
+      "created": 1781837198,
+      "owned_by": "openrouter",
+      "root": "text-embedding-3-large",
+      "type": "embedding",
+      "dimensions": 3072,
+      "capabilities": {
+        "tool_calling": true,
+        "reasoning": true
+      },
+      "max_output_tokens": 8192,
+      "name": "text-embedding-3-large"
+    },
+    {
+      "id": "openrouter/openai/text-embedding-ada-002",
+      "object": "model",
+      "created": 1781837198,
+      "owned_by": "openrouter",
+      "root": "text-embedding-ada-002",
+      "type": "embedding",
+      "dimensions": 1536,
+      "capabilities": {
+        "tool_calling": true,
+        "reasoning": true
+      },
+      "max_output_tokens": 8192,
+      "name": "text-embedding-ada-002"
+    },
+    {
+      "id": "openrouter/openai/gpt-5.4-image-2",
+      "object": "model",
+      "created": 1781837198,
+      "owned_by": "openrouter",
+      "type": "image",
+      "supported_sizes": [
+        "1024x1024",
+        "1024x1792",
+        "1792x1024"
+      ],
+      "input_modalities": [
+        "text"
+      ],
+      "output_modalities": [
+        "image"
+      ],
+      "capabilities": {
+        "vision": true,
+        "tool_calling": false,
+        "reasoning": true,
+        "thinking": true,
+        "attachment": true,
+        "structured_output": true,
+        "temperature": false
+      },
+      "context_length": 272000,
+      "max_output_tokens": 128000,
+      "max_input_tokens": 272000,
+      "family": "gpt",
+      "release_date": "2026-04-21",
+      "last_updated": "2026-04-21",
+      "open_weights": false,
+      "name": "openai/gpt-5.4-image-2"
+    },
+    {
+      "id": "openrouter/openai/gpt-5-image-mini",
+      "object": "model",
+      "created": 1781837198,
+      "owned_by": "openrouter",
+      "type": "image",
+      "supported_sizes": [
+        "1024x1024",
+        "1024x1792",
+        "1792x1024"
+      ],
+      "input_modalities": [
+        "text"
+      ],
+      "output_modalities": [
+        "image"
+      ],
+      "capabilities": {
+        "vision": true,
+        "tool_calling": false,
+        "reasoning": true,
+        "thinking": true,
+        "attachment": true,
+        "structured_output": true,
+        "temperature": true
+      },
+      "context_length": 400000,
+      "max_output_tokens": 128000,
+      "max_input_tokens": 400000,
+      "family": "gpt",
+      "release_date": "2025-10-16",
+      "last_updated": "2025-10-16",
+      "open_weights": false,
+      "name": "openai/gpt-5-image-mini"
+    },
+    {
+      "id": "openrouter/google/gemini-3.1-flash-image-preview",
+      "object": "model",
+      "created": 1781837198,
+      "owned_by": "openrouter",
+      "type": "image",
+      "supported_sizes": [
+        "1024x1024",
+        "1024x1792",
+        "1792x1024"
+      ],
+      "input_modalities": [
+        "text"
+      ],
+      "output_modalities": [
+        "image"
+      ],
+      "capabilities": {
+        "vision": true,
+        "tool_calling": false,
+        "reasoning": true,
+        "thinking": true,
+        "attachment": true,
+        "structured_output": true,
+        "temperature": true
+      },
+      "context_length": 65536,
+      "max_output_tokens": 65536,
+      "max_input_tokens": 65536,
+      "family": "gemini-flash",
+      "knowledge_cutoff": "2025-01",
+      "release_date": "2026-02-26",
+      "last_updated": "2026-02-26",
+      "open_weights": false,
+      "name": "google/gemini-3.1-flash-image-preview"
+    },
+    {
+      "id": "openrouter/google/gemini-3-pro-image-preview",
+      "object": "model",
+      "created": 1781837198,
+      "owned_by": "openrouter",
+      "type": "image",
+      "supported_sizes": [
+        "1024x1024",
+        "1024x1792",
+        "1792x1024"
+      ],
+      "input_modalities": [
+        "text"
+      ],
+      "output_modalities": [
+        "image"
+      ],
+      "capabilities": {
+        "vision": true,
+        "tool_calling": false,
+        "reasoning": true,
+        "thinking": true,
+        "attachment": true,
+        "structured_output": true,
+        "temperature": true
+      },
+      "context_length": 65536,
+      "max_output_tokens": 32768,
+      "max_input_tokens": 65536,
+      "family": "gemini-pro",
+      "knowledge_cutoff": "2025-01",
+      "release_date": "2025-11-20",
+      "last_updated": "2025-11-20",
+      "open_weights": false,
+      "name": "google/gemini-3-pro-image-preview"
+    },
+    {
+      "id": "openrouter/black-forest-labs/flux.2-max",
+      "object": "model",
+      "created": 1781837198,
+      "owned_by": "openrouter",
+      "type": "image",
+      "supported_sizes": [
+        "1024x1024",
+        "1024x1792",
+        "1792x1024"
+      ],
+      "input_modalities": [
+        "text"
+      ],
+      "output_modalities": [
+        "image"
+      ],
+      "capabilities": {
+        "tool_calling": true,
+        "reasoning": true
+      },
+      "max_output_tokens": 8192,
+      "name": "black-forest-labs/flux.2-max"
+    },
+    {
+      "id": "openrouter/black-forest-labs/flux.2-pro",
+      "object": "model",
+      "created": 1781837198,
+      "owned_by": "openrouter",
+      "type": "image",
+      "supported_sizes": [
+        "1024x1024",
+        "1024x1792",
+        "1792x1024"
+      ],
+      "input_modalities": [
+        "text"
+      ],
+      "output_modalities": [
+        "image"
+      ],
+      "capabilities": {
+        "tool_calling": true,
+        "reasoning": true
+      },
+      "max_output_tokens": 8192,
+      "name": "black-forest-labs/flux.2-pro"
+    },
+    {
+      "id": "openrouter/black-forest-labs/flux.2-flex",
+      "object": "model",
+      "created": 1781837198,
+      "owned_by": "openrouter",
+      "type": "image",
+      "supported_sizes": [
+        "1024x1024",
+        "1024x1792",
+        "1792x1024"
+      ],
+      "input_modalities": [
+        "text"
+      ],
+      "output_modalities": [
+        "image"
+      ],
+      "capabilities": {
+        "tool_calling": true,
+        "reasoning": true
+      },
+      "max_output_tokens": 8192,
+      "name": "black-forest-labs/flux.2-flex"
+    }
+  ]
+}

@@ -1,0 +1,53 @@
+{
+  "name": "@auron/opencode-improve",
+  "version": "0.1.0",
+  "description": "OpenCode plugin that injects an improve subagent for auditing codebases and writing self-contained implementation plans.",
+  "license": "MIT",
+  "type": "module",
+  "sideEffects": false,
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "references",
+    "README.md",
+    "CHANGELOG.md"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "test": "bun run build && node --test test/*.test.mjs",
+    "prepublishOnly": "bun run build"
+  },
+  "packageManager": "bun@1.2.23",
+  "publishConfig": {
+    "access": "public"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "@types/node": "^22.15.30",
+    "typescript": "^5.8.3"
+  },
+  "keywords": [
+    "opencode",
+    "improve",
+    "audit",
+    "code-review",
+    "planning",
+    "agent"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/php-depkit/opencode-plugins.git",
+    "directory": "packages/opencode-improve"
+  },
+  "bugs": {
+    "url": "https://github.com/php-depkit/opencode-plugins/issues"
+  },
+  "homepage": "https://github.com/php-depkit/opencode-plugins/tree/main/packages/opencode-improve"
+}
