@@ -1,0 +1,68 @@
+{
+  "name": "@auron-labs/opencode-omniroute-auth",
+  "version": "0.1.0",
+  "description": "OpenCode authentication plugin for OmniRoute API with /connect command and dynamic model fetching",
+  "license": "MIT",
+  "type": "module",
+  "sideEffects": false,
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    },
+    "./runtime": {
+      "import": "./dist/runtime.js",
+      "types": "./dist/runtime.d.ts"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "dev": "tsc --watch",
+    "clean": "rm -rf dist",
+    "test": "bun run build && node --test test/*.test.mjs",
+    "smoketest": "bun run build && node scripts/smoketest.mjs",
+    "check:exports": "node --input-type=module -e \"import('./dist/index.js').then((root)=>{if(typeof root.default!=='object'||typeof root.default.server!=='function')throw new Error('Default export must be {id,server}');if(typeof root.OmniRouteAuthPlugin!=='function')throw new Error('OmniRouteAuthPlugin must be a function');})\"",
+    "prepublishOnly": "bun run clean && bun run build && bun run check:exports"
+  },
+  "packageManager": "bun@1.2.23",
+  "publishConfig": {
+    "access": "public"
+  },
+  "keywords": [
+    "opencode",
+    "plugin",
+    "auth",
+    "omniroute",
+    "authentication",
+    "api-key",
+    "connect",
+    "models"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/auron-labs/opencode-plugins.git",
+    "directory": "packages/opencode-omniroute-auth"
+  },
+  "homepage": "https://github.com/auron-labs/opencode-plugins/tree/main/packages/opencode-omniroute-auth",
+  "bugs": {
+    "url": "https://github.com/auron-labs/opencode-plugins/issues"
+  },
+  "dependencies": {},
+  "peerDependencies": {
+    "@opencode-ai/plugin": "*"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "typescript": "^5.0.0"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}

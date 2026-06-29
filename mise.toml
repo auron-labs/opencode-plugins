@@ -1,0 +1,11 @@
+[tools]
+bun = "1.2.23"
+
+[tasks.lint]
+description = "Run zero-config source lint"
+run = "bash -c 'targets=(); for target in install.ts provider plugins packages; do [ -e \"$target\" ] && targets+=(\"$target\"); done; bunx oxlint \"${targets[@]}\"'"
+
+[tasks.check]
+description = "Run all workspace validation checks"
+run = "bun run check"
+depends = ["lint"]
