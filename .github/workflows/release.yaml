@@ -32,7 +32,7 @@ jobs:
       matrix:
         package: ${{ fromJSON(needs.release-please.outputs.paths_released) }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
