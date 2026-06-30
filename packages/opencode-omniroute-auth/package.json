@@ -1,6 +1,6 @@
 {
   "name": "@auron-labs/opencode-omniroute-auth",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "OpenCode authentication plugin for OmniRoute API with /connect command and dynamic model fetching",
   "license": "MIT",
   "type": "module",

@@ -1,6 +1,6 @@
 {
-  "packages/opencode-codebase-memory": "0.1.0",
-  "packages/opencode-improve": "0.1.0",
-  "packages/opencode-omniroute-auth": "0.1.0",
-  "packages/opencode-zellij": "0.1.0"
+  "packages/opencode-codebase-memory": "0.2.0",
+  "packages/opencode-improve": "0.2.0",
+  "packages/opencode-omniroute-auth": "0.2.0",
+  "packages/opencode-zellij": "0.2.0"
 }
