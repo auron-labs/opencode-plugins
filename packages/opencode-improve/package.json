@@ -1,6 +1,6 @@
 {
   "name": "@auron-labs/opencode-improve",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "OpenCode plugin that injects an improve subagent for auditing codebases and writing self-contained implementation plans.",
   "license": "MIT",
   "type": "module",
