@@ -438,7 +438,7 @@ function stopWatcher(ref: string): void {
 }
 
 function stopAllWatchers(): void {
-  for (const ref of [...panes.keys()]) {
+  for (const ref of panes.keys()) {
     stopWatcher(ref)
   }
 }
