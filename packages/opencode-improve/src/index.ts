@@ -68,6 +68,22 @@ export default { id, server: async (_context: PluginContext) => {
             description: "Audit the codebase and write self-contained implementation plans",
             agent: "improve",
             subtask: true,
+            hints: [
+              "$ARGUMENTS",
+              "quick",
+              "deep",
+              "security",
+              "perf",
+              "tests",
+              "bugs",
+              "branch",
+              "next",
+              "plan <description>",
+              "review-plan <file>",
+              "execute <plan>",
+              "reconcile",
+              "--issues",
+            ],
           }
         }
       },

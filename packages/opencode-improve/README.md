@@ -73,4 +73,4 @@ The `execute <plan>` variant dispatches a subagent to implement a plan in an iso
 
 - The `improve` agent is a subagent — it doesn't appear in the agent picker. Invoke it via `/improve`.
 - The upstream `shadcn/improve` skill markdown is bundled in the package and read at runtime, along with the reference files it points to.
-- Refresh from upstream by copying `.references/improve/skills/improve/SKILL.md` and `.references/improve/skills/improve/references/*.md` into this package's `references/` directory.
+- Refresh the bundled files from upstream with `bun run sync:improve` at the repo root, or run `bun run sync:improve:check` to fail CI when local copies drift. The script discovers `SKILL.md` and `references/*.md` from `shadcn/improve@main:skills/improve/` (via the GitHub tree API) and writes them flat into this package's `references/` directory, so renames and additions are picked up automatically. Local `.md` files in `references/` that no longer exist upstream are removed on sync and reported as failures by `check`.

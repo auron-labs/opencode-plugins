@@ -8,9 +8,11 @@
     "preinstall": "bunx only-allow bun",
     "build": "bun run --filter '*' build",
     "lint": "bash -c 'targets=(); for target in install.ts provider plugins packages; do [ -e \"$target\" ] && targets+=(\"$target\"); done; bunx oxlint \"${targets[@]}\"'",
-    "test": "bun run --filter '*' test && node --test scripts/opencode-smoke.test.mjs",
+    "test": "bun run --filter '*' test && node --test scripts/opencode-smoke.test.mjs scripts/sync-improve-upstream.test.mjs",
     "check": "bun run build && bun run test",
     "readme": "bun run scripts/update-readme.ts",
+    "sync:improve": "bun run scripts/sync-improve-upstream.ts",
+    "sync:improve:check": "bun run scripts/sync-improve-upstream.ts check",
     "smoke:plugin": "node scripts/opencode-smoke.mjs"
   }
 }

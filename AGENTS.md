@@ -58,6 +58,7 @@ bun install --frozen-lockfile
 - If you only touch one package, start with `bun run --filter <package-name> test`.
 - If you change package metadata that feeds the package table or descriptions, run `bun run readme` and review `README.md`.
 - If you change smoke tooling, run `node --test scripts/opencode-smoke.test.mjs` even if package tests already pass.
+- If you change the upstream sync script, run `node --test scripts/sync-improve-upstream.test.mjs`. The script discovers files via the GitHub tree API and auto-deletes stale locals in `packages/opencode-improve/references/`; preserve both behaviors.
 - If you change `packages/opencode-omniroute-auth/`, also follow its nested `AGENTS.md` for package-specific validation and release constraints.
 
 ## Generated And Ignored Files

@@ -22,6 +22,9 @@ test('plugin injects improve agent and command', async () => {
   assert.ok(config.command.improve)
   assert.equal(config.command.improve.agent, 'improve')
   assert.equal(config.command.improve.subtask, true)
+  assert.ok(Array.isArray(config.command.improve.hints))
+  assert.ok(config.command.improve.hints.length > 0)
+  assert.ok(config.command.improve.hints.includes('$ARGUMENTS'))
 })
 
 test('plugin preserves existing improve entries', async () => {
