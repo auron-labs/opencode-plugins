@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.1](https://github.com/auron-labs/opencode-plugins/compare/@auron-labs/opencode-zellij-v0.2.0...@auron-labs/opencode-zellij-v0.2.1) (2026-07-02)
+
+
+### Bug Fixes
+
+* **zellij:** typescript error ([c5efb18](https://github.com/auron-labs/opencode-plugins/commit/c5efb18866e6cef0f1a364db7f4a9eb36dbcb03d))
+
 ## [0.2.0](https://github.com/auron-labs/opencode-plugins/compare/@auron-labs/opencode-zellij-v0.1.0...@auron-labs/opencode-zellij-v0.2.0) (2026-06-30)
 
 
