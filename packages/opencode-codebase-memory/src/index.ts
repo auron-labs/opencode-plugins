@@ -274,7 +274,12 @@ function acquireIndexLock(directory: string): IndexLock | null {
     if (lockIsActive(lockPath)) return null
 
     rmSync(lockPath, { recursive: true, force: true })
-    mkdirSync(lockPath)
+    try {
+      mkdirSync(lockPath)
+    } catch (error) {
+      if (!(error instanceof Error) || !("code" in error) || error.code !== "EEXIST") throw error
+      return null
+    }
   }
 
   writeFileSync(
@@ -513,9 +518,9 @@ function startBackgroundIndex(binary: string, directory: string, client: Client 
   child.on("close", async (code: number | null) => {
     indexing.delete(directory)
     activeIndexes.delete(directory)
-    releaseIndexLock(lock)
     if (code === 0) {
       const refreshed = await refreshProjectState(binary, directory)
+      releaseIndexLock(lock)
       refreshed.status = refreshed.indexed ? "ready" : "idle"
       delete refreshed.lock
       stateByRoot.set(directory, refreshed)
@@ -527,6 +532,7 @@ function startBackgroundIndex(binary: string, directory: string, client: Client 
       return
     }
 
+    releaseIndexLock(lock)
     const current = stateFor(directory)
     current.status = "failed"
     current.error = lastError || `exit ${code ?? "unknown"}`

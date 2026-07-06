@@ -160,8 +160,14 @@ async function ensureRunningSession(): Promise<void> {
 
   // 2. Any existing sessions we can reuse?
   try {
-    const sessions = await execZellijWithoutSession(["list-sessions"])
-    const lines = sessions.split("\n").filter(Boolean)
+    const sessions = await execZellijWithoutSession(["list-sessions", "--no-formatting"])
+    const lines = sessions.split("\n").filter((line) => {
+      const trimmed = line.trim()
+      if (!trimmed) return false
+      // list-sessions can include EXIT/zombie sessions; skip them so we don't
+      // attach to a dead session.
+      return !/\b(EXIT|ZOMBIE)\b/.test(trimmed)
+    })
     if (lines.length > 0) {
       const name = lines[0].split(/\s+/)[0].trim()
       if (name) {
@@ -755,7 +761,6 @@ const zellijRead = tool({
       const pane = findPane(args.ref)
       if (!pane) throw new Error(`No tracked pane with ref '${args.ref}'`)
       if (pane.closed) throw new Error(`Pane '${pane.ref}' is already closed`)
-      if (pane.exited) throw new Error(`Pane '${pane.ref}' has exited`)
       paneId = pane.paneId
     } else if (args.paneId) {
       paneId = args.paneId
