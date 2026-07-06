@@ -89,6 +89,7 @@ let refCounter = 0
 let initialized = false
 let cleanupRegistered = false
 let sessionName: string | undefined
+let sessionAutoStarted = false
 
 // Zellij helpers
 
@@ -123,6 +124,63 @@ function execZellijSync(args: string[]): void {
   } catch {
     // cleanup only; pane may already be gone
   }
+}
+
+// Run a zellij command without the --session prefix, for operations that
+// need to list/start sessions rather than act within one.
+async function execZellijWithoutSession(args: string[]): Promise<string> {
+  try {
+    const { stdout } = await execFileAsync(binary, args, { timeout: 15_000 })
+    return stdout.trim()
+  } catch (error: unknown) {
+    const err = error as { code?: string; stderr?: string; message?: string }
+    if (err.code === "ENOENT") throw new Error(`zellij binary not found at '${binary}'`)
+    throw new Error(err.stderr?.trim() || err.message || "zellij command failed")
+  }
+}
+
+// Ensure a Zellij session exists before tools act.  Tries in order:
+//   1. Reach the already-configured session (from config / ZELLIJ_SESSION_NAME).
+//   2. Attach to the first existing session found via `list-sessions`.
+//   3. Start a new detached session named `opencode-<timestamp>`.
+async function ensureRunningSession(): Promise<void> {
+  // 1. Is our configured session already alive?
+  //    Only check when a session is actually configured; without a --session
+  //    context `zellij action list-panes` always fails, so the call would be a
+  //    guaranteed-failure round-trip.
+  if (sessionName) {
+    try {
+      await execZellij(["action", "list-panes", "--json"])
+      sessionAutoStarted = false
+      return
+    } catch {
+      // session not reachable
+    }
+  }
+
+  // 2. Any existing sessions we can reuse?
+  try {
+    const sessions = await execZellijWithoutSession(["list-sessions"])
+    const lines = sessions.split("\n").filter(Boolean)
+    if (lines.length > 0) {
+      const name = lines[0].split(/\s+/)[0].trim()
+      if (name) {
+        sessionName = name
+        sessionAutoStarted = false
+        info("session_found", "Attaching to existing Zellij session", { session: sessionName })
+        return
+      }
+    }
+  } catch {
+    // no sessions or daemon not running
+  }
+
+  // 3. Start a new detached session.
+  const name = sessionName || `opencode-${Date.now()}`
+  await execZellijWithoutSession(["-s", name, "-d"])
+  sessionName = name
+  sessionAutoStarted = true
+  info("session_started", "Started a new detached Zellij session", { session: sessionName })
 }
 
 // State persistence
@@ -461,6 +519,19 @@ async function cleanup(): Promise<void> {
     await closePane(pane)
   }
   panes.clear()
+  // Tear down a session the plugin auto-started so it does not linger as an
+  // orphan after OpenCode exits.
+  if (sessionAutoStarted) {
+    try {
+      await execZellij(["action", "quit-session"])
+    } catch (error) {
+      warn("session_quit_failed", "Failed to quit auto-started Zellij session", {
+        session: sessionName ?? null,
+        error: error instanceof Error ? error.message : String(error),
+      })
+    }
+    sessionAutoStarted = false
+  }
   await saveState()
 }
 
@@ -471,6 +542,10 @@ function cleanupSync(): void {
     execZellijSync(["action", "close-pane", "--pane-id", pane.paneId])
   }
   panes.clear()
+  if (sessionAutoStarted) {
+    execZellijSync(["action", "quit-session"])
+    sessionAutoStarted = false
+  }
 }
 
 function registerCleanup(): void {
@@ -524,6 +599,18 @@ async function cleanStalePanes(): Promise<void> {
     startWatcher(panes.get(ref)!).catch(() => {})
   }
 
+  // Bump refCounter past any restored auto-numbered refs (pane-N) so the
+  // next zellij_spawn is O(1) instead of scanning past restored panes.
+  let maxRef = 0
+  for (const ref of panes.keys()) {
+    const match = ref.match(/^pane-(\d+)$/)
+    if (match) {
+      const n = Number(match[1])
+      if (n > maxRef) maxRef = n
+    }
+  }
+  if (maxRef > refCounter) refCounter = maxRef
+
   if (changed) await saveState()
 }
 
@@ -552,6 +639,7 @@ async function ensureInit(options?: PluginOptions): Promise<void> {
         stateFile = newStateFile
         await cleanStalePanes()
       }
+      try { await ensureRunningSession() } catch { warn('session_auto_start_failed', 'Could not auto-start Zellij session', {}); }
     }
     return
   }
@@ -569,6 +657,7 @@ async function ensureInit(options?: PluginOptions): Promise<void> {
     session: sessionName ?? null,
     stateFile,
   })
+  try { await ensureRunningSession() } catch { warn('session_auto_start_failed', 'Could not auto-start Zellij session', {}); }
   await cleanStalePanes()
 }
 
@@ -665,6 +754,8 @@ const zellijRead = tool({
     if (args.ref) {
       const pane = findPane(args.ref)
       if (!pane) throw new Error(`No tracked pane with ref '${args.ref}'`)
+      if (pane.closed) throw new Error(`Pane '${pane.ref}' is already closed`)
+      if (pane.exited) throw new Error(`Pane '${pane.ref}' has exited`)
       paneId = pane.paneId
     } else if (args.paneId) {
       paneId = args.paneId

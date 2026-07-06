@@ -5,14 +5,14 @@ OpenCode plugin for managing Zellij terminal panes. Spawn, read, watch, and cont
 ## Install
 
 ```bash
-bun add @auron-labs/opencode-zellij
+opencode plugin @auron-labs/opencode-zellij [--global]
 ```
 
 ## Requirements
 
 - OpenCode installed and loading plugins from your config.
 - Zellij installed and on `PATH` (or set the `binary` option).
-- A running Zellij session (`$ZELLIJ_SESSION_NAME` detected automatically, or set `session` in options).
+- A running Zellij session (auto-started via a detached session if none exists; `$ZELLIJ_SESSION_NAME` detected automatically, or set `session` in options).
 
 ## Usage
 
@@ -47,7 +47,7 @@ With options:
 
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
-| `session` | string | `$ZELLIJ_SESSION_NAME` | Zellij session name to target |
+| `session` | string | `$ZELLIJ_SESSION_NAME`, or auto-generated | Zellij session name to target. If no session exists, one is auto-started in detached mode and torn down when OpenCode exits. |
 | `binary` | string | `zellij` | Path to the zellij binary |
 | `maxEvents` | number | `200` | Max events kept in the ring buffer per pane |
 | `pollMs` | number | `3000` | Polling interval (ms) for exit status detection |
@@ -176,7 +176,7 @@ The state file is written on pane changes and loaded on plugin init. It lets ref
 
 ## Limitations
 
-- Requires a running Zellij session; does not start one.
+- Requires a Zellij session; the plugin will start one in detached mode if none is running.
 - Exit code detection is poll-based, not instant.
 - The `zellij subscribe` stream may have brief gaps during rapid output bursts.
 - Pane IDs are session-scoped; reusing a ref across sessions requires manual coordination.
