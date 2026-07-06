@@ -21,7 +21,7 @@
 ## Installation
 
 ```bash
-bun add @auron-labs/opencode-omniroute-auth
+opencode plugin @auron-labs/opencode-omniroute-auth [--global]
 ```
 
 ## Quick Start
