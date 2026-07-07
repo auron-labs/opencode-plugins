@@ -3,6 +3,17 @@ name: Release
 on:
   push:
     branches: [main, master]
+  workflow_dispatch:
+    inputs:
+      package:
+        description: Package path to publish
+        required: true
+        type: choice
+        options:
+          - packages/opencode-codebase-memory
+          - packages/opencode-improve
+          - packages/opencode-omniroute-auth
+          - packages/opencode-zellij
 
 permissions:
   contents: write
@@ -10,6 +21,7 @@ permissions:
 
 jobs:
   release-please:
+    if: ${{ github.event_name == 'push' }}
     runs-on: ubuntu-latest
     outputs:
       release_created: ${{ steps.release.outputs.release_created }}
@@ -27,6 +39,8 @@ jobs:
     needs: release-please
     if: ${{ needs.release-please.outputs.releases_created == 'true' }}
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     strategy:
       fail-fast: false
       matrix:
@@ -57,10 +71,52 @@ jobs:
         working-directory: ${{ matrix.package }}
         run: bun run build
 
-      - name: Publish to npm
-        working-directory: ${{ matrix.package }}
-        run: |
-          npm config set //registry.npmjs.org/:_authToken "$NPM_TOKEN"
-          npm publish --access public
+      - name: Configure npm auth
+        run: npm config set //registry.npmjs.org/:_authToken "$NPM_TOKEN"
         env:
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Publish to npm
+        working-directory: ${{ matrix.package }}
+        run: npm publish --access public
+
+  publish-manual:
+    if: ${{ github.event_name == 'workflow_dispatch' }}
+    runs-on: ubuntu-latest
+    environment: npm-publish
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.2.23
+
+      - name: Cache Bun dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.bun/install/cache
+            node_modules
+            packages/*/node_modules
+          key: bun-${{ runner.os }}-${{ hashFiles('bun.lock') }}
+          restore-keys: |
+            bun-${{ runner.os }}-
+
+      - run: bun install --frozen-lockfile
+
+      - name: Build package
+        working-directory: ${{ inputs.package }}
+        run: bun run build
+
+      - name: Configure npm auth
+        run: npm config set //registry.npmjs.org/:_authToken "$NPM_TOKEN"
+        env:
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Publish to npm
+        working-directory: ${{ inputs.package }}
+        run: npm publish --access public
