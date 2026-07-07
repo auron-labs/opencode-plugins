@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.3.0](https://github.com/auron-labs/opencode-plugins/compare/@auron-labs/opencode-zellij-v0.2.1...@auron-labs/opencode-zellij-v0.3.0) (2026-07-06)
+
+
+### Features
+
+* **zellij:** auto-start missing session ([8af6e5c](https://github.com/auron-labs/opencode-plugins/commit/8af6e5c1fdd7f563359e1591e8e0e58a0806a336))
+
+
+### Bug Fixes
+
+* minor issues ([759d962](https://github.com/auron-labs/opencode-plugins/commit/759d962c3618ca7b72390dbdca2a85f3f70c0d86))
+
 ## [0.2.1](https://github.com/auron-labs/opencode-plugins/compare/@auron-labs/opencode-zellij-v0.2.0...@auron-labs/opencode-zellij-v0.2.1) (2026-07-02)
 
 
