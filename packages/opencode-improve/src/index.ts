@@ -63,27 +63,28 @@ export default { id, server: async (_context: PluginContext) => {
         const commands = (input.command ?? (input.command = {})) as Record<string, Record<string, unknown>>
         if (!commands.improve) {
           commands.improve = {
-            template:
-              "Run the improve workflow from your instructions. Invocation arguments: $ARGUMENTS\nIf no arguments are provided, run the default full audit and planning flow.",
-            description: "Audit the codebase and write self-contained implementation plans",
+            template: [
+              "Run the improve workflow from your instructions. Invocation arguments: $ARGUMENTS",
+              "If no arguments are provided, run the default full audit and planning flow.",
+              "If the argument is \"help\" or \"--help\", print this usage guide and do not audit:",
+              "",
+              "/improve                        full audit: recon → findings → prioritized plans",
+              "/improve quick                  cheap pass: hotspots, top findings only",
+              "/improve deep                   exhaustive: every package, every category",
+              "/improve security               focused audit (also: perf, tests, bugs)",
+              "/improve branch                 audit only what the current branch changes",
+              "/improve next                   feature suggestions — where to take the project",
+              "/improve plan <description>     skip the audit, spec one thing",
+              "/improve review-plan <file>     critique and tighten an existing plan",
+              "/improve execute <plan>         dispatch a subagent, review its work",
+              "/improve reconcile              refresh the backlog: verify, unblock, retire",
+              "/improve ... --issues           also publish plans as GitHub issues",
+              "/improve help                   show this message",
+            ].join("\n"),
+            description:
+              "Audit the codebase and write implementation plans. Args: quick|deep|security|perf|tests|bugs|branch|next|plan <desc>|review-plan <file>|execute <plan>|reconcile|help",
             agent: "improve",
             subtask: true,
-            hints: [
-              "$ARGUMENTS",
-              "quick",
-              "deep",
-              "security",
-              "perf",
-              "tests",
-              "bugs",
-              "branch",
-              "next",
-              "plan <description>",
-              "review-plan <file>",
-              "execute <plan>",
-              "reconcile",
-              "--issues",
-            ],
           }
         }
       },

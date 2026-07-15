@@ -53,6 +53,7 @@ Invoke in an OpenCode session:
 /improve execute <plan>         dispatch a cheaper subagent, review its work
 /improve reconcile              refresh the backlog: verify, unblock, retire
 /improve … --issues             also publish plans as GitHub issues
+/improve help                   show the usage guide above in-session
 ```
 
 The advisor audits across nine categories (correctness, security, performance, tests, tech debt, dependencies, DX, docs, direction), vets every finding before showing it, and writes plans for the ones you select.
