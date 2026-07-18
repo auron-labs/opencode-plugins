@@ -15,6 +15,14 @@ test('plugin injects improve agent and command', async () => {
   assert.equal(config.agent.improve.mode, 'subagent')
   assert.equal(config.agent.improve.permission.edit['plans/**'], 'allow')
   assert.equal(config.agent.improve.permission.edit['**'], 'deny')
+
+  // bundled references live outside the project root when installed from a
+  // package cache, so the agent must pre-approve reads/external_directory for
+  // its own refs dir to avoid prompting on every audit
+  const refsGlob = Object.keys(config.agent.improve.permission.read)[0]
+  assert.ok(refsGlob.endsWith('/references/**'), `expected refs glob, got ${refsGlob}`)
+  assert.equal(config.agent.improve.permission.read[refsGlob], 'allow')
+  assert.equal(config.agent.improve.permission.external_directory[refsGlob], 'allow')
   assert.equal(typeof config.agent.improve.prompt, 'string')
   assert.ok(config.agent.improve.prompt.length > 100)
   assert.ok(config.agent.improve.prompt.includes('execute <plan>'))

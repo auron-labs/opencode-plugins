@@ -56,6 +56,12 @@ export default { id, server: async (_context: PluginContext) => {
                 "advisor-plans/**": "allow",
                 "**": "deny",
               },
+              read: {
+                [`${refsDir}/**`]: "allow",
+              },
+              external_directory: {
+                [`${refsDir}/**`]: "allow",
+              },
             },
           }
         }
