@@ -1,0 +1,54 @@
+{
+  "name": "@auron-labs/opencode-worktrunk",
+  "version": "0.1.0",
+  "description": "OpenCode plugin that wraps the Worktrunk CLI (`wt`) for git worktree management — list, switch/create, remove, merge, step, and arbitrary `wt` passthrough.",
+  "license": "MIT",
+  "type": "module",
+  "sideEffects": false,
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "CHANGELOG.md"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "test": "bun run build && node --test test/*.test.mjs",
+    "prepublishOnly": "bun run build"
+  },
+  "packageManager": "bun@1.2.23",
+  "publishConfig": {
+    "access": "public"
+  },
+  "dependencies": {
+    "@opencode-ai/plugin": "^1.17.15"
+  },
+  "devDependencies": {
+    "@types/node": "^26.1.1",
+    "typescript": "^7.0.2"
+  },
+  "keywords": [
+    "opencode",
+    "worktrunk",
+    "git",
+    "worktree",
+    "plugin",
+    "agent"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/auron-labs/opencode-plugins.git",
+    "directory": "packages/opencode-worktrunk"
+  },
+  "bugs": {
+    "url": "https://github.com/auron-labs/opencode-plugins/issues"
+  },
+  "homepage": "https://github.com/auron-labs/opencode-plugins/tree/main/packages/opencode-worktrunk"
+}

@@ -1,5 +1,6 @@
 {
   "lockfileVersion": 1,
+  "configVersion": 0,
   "workspaces": {
     "": {},
     "packages/opencode-codebase-memory": {
@@ -32,6 +33,17 @@
         "@opencode-ai/plugin": "*",
       },
     },
+    "packages/opencode-worktrunk": {
+      "name": "@auron-labs/opencode-worktrunk",
+      "version": "0.1.0",
+      "dependencies": {
+        "@opencode-ai/plugin": "^1.17.15",
+      },
+      "devDependencies": {
+        "@types/node": "^26.1.1",
+        "typescript": "^7.0.2",
+      },
+    },
     "packages/opencode-zellij": {
       "name": "@auron-labs/opencode-zellij",
       "version": "0.3.0",
@@ -52,6 +64,8 @@
     "@auron-labs/opencode-improve": ["@auron-labs/opencode-improve@workspace:packages/opencode-improve"],
 
     "@auron-labs/opencode-omniroute-auth": ["@auron-labs/opencode-omniroute-auth@workspace:packages/opencode-omniroute-auth"],
+
+    "@auron-labs/opencode-worktrunk": ["@auron-labs/opencode-worktrunk@workspace:packages/opencode-worktrunk"],
 
     "@auron-labs/opencode-zellij": ["@auron-labs/opencode-zellij@workspace:packages/opencode-zellij"],
 

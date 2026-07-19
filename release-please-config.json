@@ -23,6 +23,11 @@
       "component": "@auron-labs/opencode-zellij",
       "changelog-path": "CHANGELOG.md",
       "release-type": "node"
+    },
+    "packages/opencode-worktrunk": {
+      "component": "@auron-labs/opencode-worktrunk",
+      "changelog-path": "CHANGELOG.md",
+      "release-type": "node"
     }
   }
 }

@@ -13,6 +13,7 @@ OpenCode plugin workspace with small, focused packages for codebase indexing, au
 | [@auron-labs/opencode-codebase-memory](./packages/opencode-codebase-memory) | OpenCode plugin for codebase-memory-mcp with startup indexing for the active project. | `bun add @auron-labs/opencode-codebase-memory` |
 | [@auron-labs/opencode-improve](./packages/opencode-improve) | OpenCode plugin that injects an improve subagent for auditing codebases and writing self-contained implementation plans. | `bun add @auron-labs/opencode-improve` |
 | [@auron-labs/opencode-omniroute-auth](./packages/opencode-omniroute-auth) | OpenCode authentication plugin for OmniRoute API with /connect command and dynamic model fetching | `bun add @auron-labs/opencode-omniroute-auth` |
+| [@auron-labs/opencode-worktrunk](./packages/opencode-worktrunk) | OpenCode plugin that wraps the Worktrunk CLI (`wt`) for git worktree management — list, switch/create, remove, merge, step, and arbitrary `wt` passthrough. | `bun add @auron-labs/opencode-worktrunk` |
 | [@auron-labs/opencode-zellij](./packages/opencode-zellij) | OpenCode plugin for managing Zellij panes with event subscriptions, output reading, and lifecycle tracking. | `bun add @auron-labs/opencode-zellij` |
 
 Each package is published to npm and can also be installed with `npm install <package>` if you are not using Bun.
@@ -21,6 +22,7 @@ Some plugins also expect local tools on `PATH`:
 
 - `@auron-labs/opencode-codebase-memory` expects `codebase-memory-mcp` unless you configure a custom binary path.
 - `@auron-labs/opencode-zellij` expects a running Zellij session and the `zellij` binary.
+- `@auron-labs/opencode-worktrunk` expects the `wt` (Worktrunk) CLI on `PATH` unless you configure a custom binary path.
 
 ## Quick Start
 
@@ -44,6 +46,7 @@ Package-specific configuration, requirements, and examples live in each package 
 - [@auron-labs/opencode-codebase-memory](./packages/opencode-codebase-memory)
 - [@auron-labs/opencode-improve](./packages/opencode-improve)
 - [@auron-labs/opencode-omniroute-auth](./packages/opencode-omniroute-auth)
+- [@auron-labs/opencode-worktrunk](./packages/opencode-worktrunk)
 - [@auron-labs/opencode-zellij](./packages/opencode-zellij)
 
 ## Troubleshooting
