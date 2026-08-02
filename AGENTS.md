@@ -5,6 +5,7 @@
 - Bun workspace for publishable OpenCode plugins in `packages/*`.
 - Current packages:
   - `packages/opencode-codebase-memory/` - wires `codebase-memory-mcp` into OpenCode and can auto-index the active project.
+  - `packages/opencode-impeccable/` - native plugin port of pbakaus/impeccable: 23 design commands as `/impeccable-*`, tools that replace every `Bash(npx impeccable *)` call, and a post-edit detector hook. Tracks upstream via `bun run sync` in the package.
   - `packages/opencode-improve/` - injects the `/improve` command and bundled audit-planning references.
   - `packages/opencode-omniroute-auth/` - OmniRoute auth/provider plugin. Read its nested `packages/opencode-omniroute-auth/AGENTS.md` before making package-local changes.
   - `packages/opencode-zellij/` - Zellij pane-management plugin.
@@ -60,6 +61,7 @@ bun install --frozen-lockfile
 - If you change package metadata that feeds the package table or descriptions, run `bun run readme` and review `README.md`.
 - If you change smoke tooling, run `node --test scripts/opencode-smoke.test.mjs` even if package tests already pass.
 - If you change the upstream sync script, run `node --test scripts/sync-improve-upstream.test.mjs`. The script discovers files via the GitHub tree API and auto-deletes stale locals in `packages/opencode-improve/references/`; preserve both behaviors.
+- If you change the Impeccable references sync script in `packages/opencode-impeccable/scripts/sync-impeccable-upstream.mjs`, run `node --test test/sync.test.mjs` from the package. Discovery targets `.agents/skills/impeccable/reference/*.md` (not `.opencode/...`) and SKILL.md is vendored locally so it is excluded from deletion.
 - If you change `packages/opencode-omniroute-auth/`, also follow its nested `AGENTS.md` for package-specific validation and release constraints.
 
 ## Generated And Ignored Files

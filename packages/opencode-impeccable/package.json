@@ -1,0 +1,57 @@
+{
+  "name": "@auron-labs/opencode-impeccable",
+  "version": "0.1.0",
+  "description": "OpenCode plugin that wires Impeccable's design skill routing, detector rules, and post-edit hook into typed tools and commands.",
+  "license": "MIT",
+  "type": "module",
+  "sideEffects": false,
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "references",
+    "README.md",
+    "CHANGELOG.md"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "test": "bun run build && node --test test/*.test.mjs",
+    "sync": "node scripts/sync-impeccable-upstream.mjs",
+    "sync:check": "node scripts/sync-impeccable-upstream.mjs check",
+    "prepublishOnly": "bun run build"
+  },
+  "packageManager": "bun@1.2.23",
+  "publishConfig": {
+    "access": "public"
+  },
+  "dependencies": {
+    "@opencode-ai/plugin": "^1.17.15"
+  },
+  "devDependencies": {
+    "@types/node": "^26.1.1",
+    "typescript": "^7.0.2"
+  },
+  "keywords": [
+    "opencode",
+    "impeccable",
+    "design",
+    "frontend",
+    "ux",
+    "plugin"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/auron-labs/opencode-plugins.git",
+    "directory": "packages/opencode-impeccable"
+  },
+  "bugs": {
+    "url": "https://github.com/auron-labs/opencode-plugins/issues"
+  },
+  "homepage": "https://github.com/auron-labs/opencode-plugins/tree/main/packages/opencode-impeccable"
+}

@@ -9,6 +9,11 @@
       "changelog-path": "CHANGELOG.md",
       "release-type": "node"
     },
+    "packages/opencode-impeccable": {
+      "component": "@auron-labs/opencode-impeccable",
+      "changelog-path": "CHANGELOG.md",
+      "release-type": "node"
+    },
     "packages/opencode-improve": {
       "component": "@auron-labs/opencode-improve",
       "changelog-path": "CHANGELOG.md",

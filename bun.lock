@@ -1,11 +1,21 @@
 {
   "lockfileVersion": 1,
-  "configVersion": 0,
   "workspaces": {
     "": {},
     "packages/opencode-codebase-memory": {
       "name": "@auron-labs/opencode-codebase-memory",
       "version": "0.2.1",
+      "dependencies": {
+        "@opencode-ai/plugin": "^1.17.15",
+      },
+      "devDependencies": {
+        "@types/node": "^26.1.1",
+        "typescript": "^7.0.2",
+      },
+    },
+    "packages/opencode-impeccable": {
+      "name": "@auron-labs/opencode-impeccable",
+      "version": "0.1.0",
       "dependencies": {
         "@opencode-ai/plugin": "^1.17.15",
       },
@@ -60,6 +70,8 @@
     "@ai-sdk/provider": ["@ai-sdk/provider@3.0.8", "", { "dependencies": { "json-schema": "^0.4.0" } }, "sha512-oGMAgGoQdBXbZqNG0Ze56CHjDZ1IDYOwGYxYjO5KLSlz5HiNQ9udIXsPZ61VWaHGZ5XW/jyjmr6t2xz2jGVwbQ=="],
 
     "@auron-labs/opencode-codebase-memory": ["@auron-labs/opencode-codebase-memory@workspace:packages/opencode-codebase-memory"],
+
+    "@auron-labs/opencode-impeccable": ["@auron-labs/opencode-impeccable@workspace:packages/opencode-impeccable"],
 
     "@auron-labs/opencode-improve": ["@auron-labs/opencode-improve@workspace:packages/opencode-improve"],
 
