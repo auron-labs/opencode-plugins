@@ -1,8 +1,8 @@
 {
   "packages/opencode-codebase-memory": "0.2.1",
-  "packages/opencode-impeccable": "0.1.0",
-  "packages/opencode-improve": "0.3.0",
+  "packages/opencode-impeccable": "0.2.0",
+  "packages/opencode-improve": "0.4.0",
   "packages/opencode-omniroute-auth": "0.2.0",
   "packages/opencode-zellij": "0.3.0",
-  "packages/opencode-worktrunk": "0.1.0"
+  "packages/opencode-worktrunk": "0.2.0"
 }

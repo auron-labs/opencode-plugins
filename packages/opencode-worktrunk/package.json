@@ -1,6 +1,6 @@
 {
   "name": "@auron-labs/opencode-worktrunk",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "OpenCode plugin that wraps the Worktrunk CLI (`wt`) for git worktree management — list, switch/create, remove, merge, step, and arbitrary `wt` passthrough.",
   "license": "MIT",
   "type": "module",
