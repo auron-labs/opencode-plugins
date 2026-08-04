@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.0](https://github.com/auron-labs/opencode-plugins/compare/@auron-labs/opencode-impeccable-v0.2.0...@auron-labs/opencode-impeccable-v0.3.0) (2026-08-04)
+
+
+### Features
+
+* **impeccable:** import upstream implementation to keep sync ([099925f](https://github.com/auron-labs/opencode-plugins/commit/099925fe09518c2f0a61a6e8a67f0eea3d136b1e))
+
 ## [0.2.0](https://github.com/auron-labs/opencode-plugins/compare/@auron-labs/opencode-impeccable-v0.1.0...@auron-labs/opencode-impeccable-v0.2.0) (2026-08-03)
 
 

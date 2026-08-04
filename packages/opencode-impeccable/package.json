@@ -1,6 +1,6 @@
 {
   "name": "@auron-labs/opencode-impeccable",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Self-contained OpenCode port of Impeccable with editing commands, typed workflow tools, and a post-edit design detector.",
   "license": "MIT",
   "type": "module",
