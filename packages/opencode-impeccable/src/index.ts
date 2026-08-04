@@ -1,27 +1,41 @@
 import { readFile } from "node:fs/promises"
-import { existsSync } from "node:fs"
 import { dirname, join } from "node:path"
 import { fileURLToPath } from "node:url"
 import { COMMANDS, describeCommand, type ImperfectableCommand } from "./commands.js"
-import type { ImperfectableRuntime } from "./tools.js"
+import { warn } from "./logger.js"
+import { defaultRuntimePaths, runHookScript, type ImpeccableRuntime } from "./runtime.js"
 import { buildTools } from "./tools.js"
-import { buildDetectorRunner, detectorCandidatesFromWrite, type DetectorScanResult } from "./detector.js"
-import { resolveHook } from "./config.js"
-import { info, warn } from "./logger.js"
 
 const id = "opencode-impeccable"
+const FRONTMATTER = /^---\n[\s\S]*?\n---\n\n/
+const EDIT_TOOLS = new Set(["write", "edit", "multiedit", "patch", "apply_patch"])
+const AUXILIARY_AGENTS = {
+  impeccable_asset_producer: {
+    file: "impeccable-asset-producer.md",
+    description: "Produce reusable raster assets from an approved Impeccable visual direction.",
+  },
+  impeccable_documenter: {
+    file: "impeccable-documenter.md",
+    description: "Record DESIGN.md and its sidecar from the finished implementation.",
+  },
+  impeccable_finish_reviewer: {
+    file: "impeccable-finish-reviewer.md",
+    description: "Review a finished implementation against its direction, comp, and quality bar.",
+  },
+  impeccable_manual_edit_applier: {
+    file: "impeccable-manual-edit-applier.md",
+    description: "Apply one leased live-design copy-edit batch to project source.",
+  },
+} as const
 
 export type ImperfectablePluginOptions = {
-  binary?: string
-  bootstrap?: boolean
-  refsPath?: string
+  nodePath?: string
 }
 
 export type PluginContext = {
-  client?: unknown
+  client?: Client
   directory: string
   worktree?: string
-  project?: { worktree?: string }
 }
 
 export type Client = {
@@ -43,65 +57,71 @@ export type Client = {
   }
 }
 
-const FRONTMATTER = /^---\n[\s\S]*?\n---\n\n/
+const ADAPTER_PROMPT = `
+You are the Impeccable implementation agent inside the native OpenCode plugin.
 
-function normalizeOptions(options?: ImperfectablePluginOptions) {
-  return {
-    binary: options?.binary?.trim() || "impeccable",
-    bootstrap: options?.bootstrap ?? true,
-    refsPath: options?.refsPath ?? fileURLToPath(new URL("../references/SKILL.md", import.meta.url)),
-  }
-}
+OpenCode adapter rules:
+- You are an implementation agent, not a read-only planner. Complete requested edits and verify them with the project's normal tools.
+- The user's effective OpenCode permissions remain authoritative. Do not inspect global OpenCode configuration to diagnose a denied action.
+- Call impeccable_context once at the beginning of an Impeccable workflow.
+- Load playbooks with impeccable_reference. Pass the Markdown basename without .md.
+- Any playbook command written as node {{scripts_path}}/<name>.mjs maps to the typed tool impeccable_<name>, with hyphens converted to underscores.
+- Use impeccable_hooks_* tools for hook administration and impeccable_pin for shortcuts.
+- Never invoke npx impeccable or a package-external Impeccable binary. The plugin's tools own the bundled runtime.
+- Normal project editing, shell, browser, test, and build tools remain available when the user's permission policy allows them.
+`.trim()
 
 async function loadSkillPrompt(refsDirAbs: string): Promise<string> {
-  const skillPath = join(refsDirAbs, "SKILL.md")
-  const body = await readFile(skillPath, "utf8")
-  return body.replace(FRONTMATTER, "")
+  const body = await readFile(join(refsDirAbs, "SKILL.md"), "utf8")
+  const upstream = body
+    .replace(FRONTMATTER, "")
+    .replaceAll("{{command_prefix}}", "/")
+    .replaceAll("node {{scripts_path}}/context.mjs", "the impeccable_context tool")
+    .replaceAll("node {{scripts_path}}/pin.mjs <pin|unpin> <command>", "the impeccable_pin tool")
+  return `${ADAPTER_PROMPT}\n\n${upstream}`
 }
 
-function rewriteReferences(prompt: string, refsDirAbs: string): string {
-  return prompt.replaceAll("`references/", `\`${refsDirAbs}/`).replaceAll("references/", `${refsDirAbs}/`)
-}
-
-function buildRuntime(directory: string, worktree: string, binary: string, refsDirAbs: string): ImperfectableRuntime {
-  return {
-    binary,
-    directory,
-    refsDirAbs,
-    worktree,
-    isNativePlatform: (platform: string) => platform === "ios" || platform === "android" || platform === "adaptive",
-  }
-}
-
-function buildCommandRecord(cmd: ImperfectableCommand, refsDirAbs: string): Record<string, unknown> {
-  const refsNote = cmd.nativeReference
-    ? `\nIf the project platform is native (ios/android/adaptive), also load \`${refsDirAbs}/${cmd.nativeReference}\`.`
-    : ""
-  const template = [
-    `Run /impeccable ${cmd.name} per \`${refsDirAbs}/SKILL.md\`.${cmd.deprecated ? " This command is deprecated; behave as ordinary new-work." : ""}`,
-    `Load \`${refsDirAbs}/${cmd.reference}\` and follow it.${refsNote}`,
-    `Invocation arguments: $ARGUMENTS`,
+async function loadAuxiliaryAgentPrompt(agentsDirAbs: string, file: string): Promise<string> {
+  const upstream = (await readFile(join(agentsDirAbs, file), "utf8")).replace(FRONTMATTER, "")
+  const adapter = [
+    "OpenCode adapter rules:",
+    "- The user's effective OpenCode permissions are authoritative; this plugin does not override them.",
+    "- When an input names reference/<name>.md, load <name> with impeccable_reference instead of reading plugin package paths.",
+    "- Use the plugin's impeccable_* tools for Impeccable runtime workflows; never invoke npx impeccable or a separate Impeccable binary.",
   ].join("\n")
+  return `${adapter}\n\n${upstream}`
+}
+
+function buildCommandRecord(command: ImperfectableCommand): Record<string, unknown> {
+  const lines = [
+    `Run /impeccable ${command.name}.${command.deprecated ? " This command is deprecated; handle it as ordinary new-work." : ""}`,
+    `Load the ${command.reference.replace(/\.md$/, "")} playbook with impeccable_reference and follow it.`,
+  ]
+  if (command.nativeReference) {
+    lines.push(
+      `For ios/android/adaptive projects, also load ${command.nativeReference.replace(/\.md$/, "")} with impeccable_reference.`,
+    )
+  }
+  lines.push("Invocation arguments: $ARGUMENTS")
   return {
-    description: describeCommand(cmd),
-    template,
+    description: describeCommand(command),
+    template: lines.join("\n"),
     agent: "impeccable",
     subtask: true,
   }
 }
 
-function buildMenuCommand(refsDirAbs: string): Record<string, unknown> {
+function buildMenuCommand(): Record<string, unknown> {
   return {
     description:
-      "Route an impeccable workflow (no-argument menu, draft commands, design tasks). Default name keeps the upstream `/impeccable` namespace intact.",
+      "Route an Impeccable workflow or show the context-aware Impeccable command menu.",
     template: [
-      "Dispatch via the impeccable agent. Invocation arguments: $ARGUMENTS",
-      "With no arguments, load `references/routing.md` for the context-aware menu; never auto-run a command.",
-      "With an explicit or clearly implied command, load its reference at `${refsDirAbs}/<command>.md` and follow it.",
-      "With a `hooks` or `doctor` argument, use the matching tool from the toolkit rather than re-implementing the flow.",
-    ]
-      .join("\n")
-      .replace("${refsDirAbs}", refsDirAbs),
+      "Dispatch this request through the Impeccable implementation agent.",
+      "Call impeccable_context once before routing.",
+      "With no arguments, load routing with impeccable_reference and present its menu without auto-running a command.",
+      "With an explicit or clearly implied command, load its playbook with impeccable_reference and follow it.",
+      "Invocation arguments: $ARGUMENTS",
+    ].join("\n"),
     agent: "impeccable",
     subtask: true,
   }
@@ -111,57 +131,47 @@ export const ImperfectablePlugin = async (
   { client, directory, worktree }: PluginContext,
   options?: ImperfectablePluginOptions,
 ) => {
-  const opts = normalizeOptions(options)
-  const refsDirAbs = dirname(opts.refsPath)
-  const effectiveWorktree = worktree || directory
-  const runtime = buildRuntime(directory, effectiveWorktree, opts.binary, refsDirAbs)
+  const packageRoot = dirname(dirname(fileURLToPath(import.meta.url)))
+  const paths = defaultRuntimePaths(packageRoot)
+  const runtime: ImpeccableRuntime = {
+    directory,
+    worktree: worktree || directory,
+    ...paths,
+    nodePath: options?.nodePath?.trim() || process.env.IMPECCABLE_NODE?.trim() || "node",
+  }
   const tools = buildTools(runtime)
 
-  // Bootstrap a missing/older installation lazily, but never block plugin load.
-  void (async () => {
-    if (!opts.bootstrap) return
-    if (opts.binary !== "impeccable" && !existsSync(opts.binary)) {
-      info("binary_missing", "impeccable binary not found at the configured path", {
-        binary: opts.binary,
-      })
-    }
-  })()
-
   const configHook = async (input: Record<string, unknown> = {}) => {
-    const promptBody = await loadSkillPrompt(refsDirAbs).catch(() => "")
-    const finalPrompt = promptBody ? rewriteReferences(promptBody, refsDirAbs) : ""
-
+    const prompt = await loadSkillPrompt(runtime.refsDirAbs)
     const agents = (input.agent ?? (input.agent = {})) as Record<string, Record<string, unknown>>
-    if (!agents.impeccable && finalPrompt) {
+    if (!agents.impeccable) {
       agents.impeccable = {
         description:
-          "Plan, execute, and review Impeccable design commands (audit, polish, critique, init, document, extract, etc.). Always call impeccable_context once per session first; never invoke Bash.",
+          "Implement and review Impeccable design workflows, including project edits and verification, using the bundled typed tools.",
         mode: "subagent",
         hidden: true,
-        prompt: finalPrompt,
-        permission: {
-          edit: { "**": "deny" },
-          read: { [`${refsDirAbs}/**`]: "allow" },
-          external_directory: { [`${refsDirAbs}/**`]: "allow" },
-        },
+        prompt,
+      }
+    }
+    for (const [name, agent] of Object.entries(AUXILIARY_AGENTS)) {
+      if (agents[name]) continue
+      agents[name] = {
+        description: agent.description,
+        mode: "subagent",
+        hidden: true,
+        prompt: await loadAuxiliaryAgentPrompt(runtime.agentsDirAbs, agent.file),
       }
     }
 
     const commands = (input.command ?? (input.command = {})) as Record<string, Record<string, unknown>>
-    for (const cmd of COMMANDS) {
-      const key = `impeccable-${cmd.name}`
-      const payload = buildCommandRecord(cmd, refsDirAbs)
-      if (!commands[key]) {
-        commands[key] = payload
-      }
+    for (const command of COMMANDS) {
+      const key = `impeccable-${command.name}`
+      if (!commands[key]) commands[key] = buildCommandRecord(command)
     }
-    if (!commands.impeccable) {
-      commands.impeccable = buildMenuCommand(refsDirAbs)
-    }
+    if (!commands.impeccable) commands.impeccable = buildMenuCommand()
   }
 
-  const hooks = buildHooks(runtime, client as Client | undefined, refsDirAbs)
-
+  const hooks = buildHooks(runtime, client)
   return {
     config: configHook,
     tool: tools,
@@ -170,82 +180,103 @@ export const ImperfectablePlugin = async (
   }
 }
 
-function buildHooks(runtime: ImperfectableRuntime, client: Client | undefined, refsDirAbs: string) {
-  const detector = buildDetectorRunner(runtime, {
-    onFindings: (path, result) => {
-      if (result.findings.length === 0) return
-      const summary = formatFindingsSummary(result)
-      void notify(client, summary, "warning", refsDirAbs)
-    },
-  })
-
-  function extractWritePaths(toolName: string, args: unknown): string[] {
-    if (!args || typeof args !== "object") return []
-    const obj = args as Record<string, unknown>
-    const candidates: unknown[] = []
-    if (toolName === "write") candidates.push(obj.filePath, obj.path)
-    else if (toolName === "edit" || toolName === "multiedit" || toolName === "patch") candidates.push(obj.filePath, obj.path)
-    else if (toolName === "bash") {
-      const command = typeof obj.command === "string" ? obj.command : ""
-      if (/\b(write|edit)\b/.test(command)) {
-        // surface a curl/tee/etc wrote-a-file case by letting detector handle it via the watcher
-      }
-      return []
-    }
-    return candidates
-      .filter((value): value is string => typeof value === "string")
-      .filter((value) => detectorCandidatesFromWrite(value))
-  }
-
+function buildHooks(runtime: ImpeccableRuntime, client?: Client) {
+  const warnedSessions = new Set<string>()
   return {
-    after: async (input: { tool: string; args: unknown }) => {
-      const paths = extractWritePaths(input.tool, input.args)
-      if (paths.length === 0) return
-      const hook = resolveHook(runtime.directory)
-      if (!hook.enabled) return
-      // ponytail: scanner is shared across calls; concurrent edits get serialized
-      for (const path of paths) {
-        try {
-          await detector.scanPath(path)
-        } catch (error) {
-          warn("detector_failed", "Detector scan failed for post-edit path", {
-            path,
-            error: error instanceof Error ? error.message : String(error),
-          })
+    after: async (
+      input: { tool: string; sessionID?: string; args?: unknown },
+      output?: { output?: string; title?: string; metadata?: unknown },
+    ) => {
+      if (!EDIT_TOOLS.has(input.tool) || !input.args || typeof input.args !== "object") return
+      const sessionID = input.sessionID || "unknown"
+      const toolInput = normalizeHookToolInput(input.tool, input.args as Record<string, unknown>)
+      try {
+        const result = await runHookScript(runtime, {
+          hook_event_name: "PostToolUse",
+          sessionId: sessionID,
+          cwd: runtime.worktree,
+          toolName: input.tool === "patch" ? "apply_patch" : input.tool,
+          toolArgs: input.tool === "patch" || input.tool === "apply_patch"
+            ? String(toolInput.command ?? "")
+            : toolInput,
+        })
+        const reminder = extractAdditionalContext(result.stdout)
+        if (!reminder) return
+        if (output) {
+          const block = `<system-reminder>\n${reminder}\n</system-reminder>`
+          output.output = output.output ? `${output.output}\n\n${block}` : block
+        }
+        if (looksLikeFinding(reminder)) {
+          await notify(client, compactReminder(reminder), "warning")
+        }
+      } catch (error) {
+        warn("detector_failed", "Bundled detector hook failed after an edit", {
+          sessionID,
+          error: error instanceof Error ? error.message : String(error),
+        })
+        if (!warnedSessions.has(sessionID)) {
+          warnedSessions.add(sessionID)
+          await notify(
+            client,
+            `Impeccable detector could not run: ${error instanceof Error ? error.message : String(error)}`,
+            "warning",
+          )
         }
       }
     },
     event: async ({ event }: { event: { type: string; properties?: unknown } }) => {
-      if (event.type === "session.idle") {
-        // ponytail: session-scoped deep scan is intentionally not implemented yet
-        // — the upstream Stop hook equivalent surfaces a deduplicated set across
-        // touched files. Sub-skill can call impeccable_detect with the session's
-        // touched file list directly.
-      }
+      if (event.type !== "session.idle" && event.type !== "session.deleted") return
+      const properties = event.properties as { sessionID?: string; id?: string } | undefined
+      const sessionID = properties?.sessionID ?? properties?.id
+      if (sessionID) warnedSessions.delete(sessionID)
     },
   }
 }
 
-async function notify(client: Client | undefined, message: string, variant: string, refsDirAbs: string) {
+function normalizeHookToolInput(toolName: string, args: Record<string, unknown>): Record<string, unknown> {
+  const output = { ...args }
+  if (toolName === "patch" || toolName === "apply_patch") {
+    output.command = args.command ?? args.patch ?? args.input ?? ""
+  }
+  if (typeof output.filePath === "string" && output.file_path === undefined) {
+    output.file_path = output.filePath
+  }
+  return output
+}
+
+function extractAdditionalContext(stdout: string): string | null {
+  const text = stdout.trim()
+  if (!text) return null
+  try {
+    const value = JSON.parse(text) as {
+      additionalContext?: unknown
+      hookSpecificOutput?: { additionalContext?: unknown }
+    }
+    const context = value.additionalContext ?? value.hookSpecificOutput?.additionalContext
+    return typeof context === "string" && context.trim() ? context.trim() : null
+  } catch {
+    warn("hook_output_invalid", "Impeccable hook returned malformed JSON", { output: text.slice(0, 500) })
+    return null
+  }
+}
+
+function looksLikeFinding(message: string): boolean {
+  return /finding|fix these|impeccable detected|still present/i.test(message)
+}
+
+function compactReminder(message: string): string {
+  return message.split("\n").filter(Boolean).slice(0, 4).join("\n").slice(0, 800)
+}
+
+async function notify(client: Client | undefined, message: string, variant: string) {
   if (!client?.tui?.showToast) return
   try {
     await client.tui.showToast({ body: { message, variant }, duration: 6000 })
   } catch (error) {
-    warn("toast_failed", "Failed to show detector finding toast", {
-      refsDirAbs,
+    warn("toast_failed", "Failed to show Impeccable notification", {
       error: error instanceof Error ? error.message : String(error),
     })
   }
-}
-
-function formatFindingsSummary(result: DetectorScanResult): string {
-  const count = result.findings.length
-  const first = result.findings
-    .slice(0, 3)
-    .map((finding) => `• ${finding.rule}: ${finding.message.split("\n")[0]}`)
-    .join("\n")
-  const extra = count > 3 ? `\n…and ${count - 3} more` : ""
-  return `impeccable: ${count} finding(s) in ${result.path}\n${first}${extra}`
 }
 
 export default { id, server: ImperfectablePlugin }

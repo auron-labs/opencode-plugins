@@ -1,6 +1,8 @@
 # @auron-labs/opencode-impeccable
 
-Native OpenCode plugin for [pbakaus/impeccable](https://github.com/pbakaus/impeccable): 23 design commands as `/impeccable-*` sub-commands, typed tools that replace every `Bash(npx impeccable *)` call, and a post-edit detector hook. Vendors the upstream reference docs (with a rewritten `SKILL.md` that drops the Bash permission) so the LLM never has to shell out to a script.
+A self-contained OpenCode port of [pbakaus/impeccable](https://github.com/pbakaus/impeccable). It provides the `/impeccable` menu, 23 implementation commands, typed workflow tools, and automatic design checks after edits.
+
+The plugin vendors a version-locked upstream snapshot. It does not install or invoke a separate `impeccable` executable, and its hidden implementation agent inherits the user's OpenCode permissions instead of forcing read-only access.
 
 ## Install
 
@@ -8,115 +10,88 @@ Native OpenCode plugin for [pbakaus/impeccable](https://github.com/pbakaus/impec
 opencode plugin @auron-labs/opencode-impeccable [--global]
 ```
 
-## Requirements
-
-- OpenCode installed and loading plugins from your config.
-- The `impeccable` CLI installed and on `PATH` (or pass a custom `binary` option). The plugin shells out to it for `detect`, `doctor`, `install`, `update`, `check`, `pin`, and `ignores` commands.
-
-## Usage
-
-Add to your OpenCode config:
+Add the plugin to OpenCode's configuration if your installation does not do so automatically:
 
 ```json
 {
-  "plugin": [
-    ["@auron-labs/opencode-impeccable", {}]
-  ]
+  "plugin": ["@auron-labs/opencode-impeccable"]
 }
 ```
 
-With options:
+Restart OpenCode after changing plugin configuration.
+
+## Requirements
+
+- OpenCode with plugin support.
+- Node.js 22.18 or newer, matching the locked upstream runtime. The bundled JavaScript is launched directly by the plugin.
+
+No standalone Impeccable CLI installation is required.
+
+## Commands
+
+`/impeccable` opens the context-aware router. The plugin also registers these implementation commands:
+
+```text
+/impeccable-craft       /impeccable-shape       /impeccable-init
+/impeccable-document    /impeccable-extract     /impeccable-critique
+/impeccable-audit       /impeccable-polish      /impeccable-bolder
+/impeccable-quieter     /impeccable-distill     /impeccable-harden
+/impeccable-onboard     /impeccable-animate     /impeccable-colorize
+/impeccable-typeset     /impeccable-layout      /impeccable-delight
+/impeccable-overdrive   /impeccable-clarify     /impeccable-adapt
+/impeccable-optimize    /impeccable-live
+```
+
+Each command delegates to a hidden, capable Impeccable subagent. Four upstream specialist agents—asset production, finish review, design-system documentation, and live copy-edit application—are also registered for the playbooks that require independent handoffs. These agents use the permissions already configured by the user; the plugin does not force a read-only policy or inspect global OpenCode configuration to second-guess those permissions.
+
+## Native tools
+
+The plugin exposes 29 typed tools so upstream playbooks never need `npx impeccable` or raw `node .../scripts` commands. They cover:
+
+- reference and project context loading;
+- detection, doctor, CSP, and ignore workflows;
+- safe project-local command pinning;
+- hook status, configuration, and suppressions;
+- concept seeds, critique storage, surface briefs, image prompts, and image generation;
+- the complete live-design server, polling, resume, completion, insertion, and wrapping workflow.
+
+Install, update, and version-check tools are intentionally absent. Updating the OpenCode plugin updates its coherent runtime snapshot.
+
+## Post-edit detector
+
+After `write`, `edit`, `multiedit`, `patch`, or `apply_patch`, the plugin passes every touched project file to the bundled upstream hook. The full detector pass runs against supported UI targets and appends its feedback directly to the current tool output as a `<system-reminder>`.
+
+The hook is fail-open: runtime failures never turn a successful edit into a failed edit, and the user receives at most one warning per session until the session becomes idle. Upstream `.impeccable/config.json` and `.impeccable/config.local.json` settings—including `hook.enabled`, quiet mode, and ignore rules—remain authoritative. Use the `impeccable_hooks_*` and `impeccable_ignores` tools to manage them.
+
+## Options
+
+The plugin normally needs no options. A custom Node executable can be supplied when necessary:
 
 ```json
 {
   "plugin": [
     ["@auron-labs/opencode-impeccable", {
-      "binary": "/Users/me/.local/bin/impeccable",
-      "bootstrap": true
+      "nodePath": "/absolute/path/to/node"
     }]
   ]
 }
 ```
 
-Restart OpenCode after changing plugin config.
+`IMPECCABLE_NODE` is also honored when `nodePath` is not set.
 
-## Commands
+## Upstream snapshot
 
-The plugin registers `/impeccable` plus 23 sub-commands (`/impeccable-audit`, `/impeccable-polish`, `/impeccable-critique`, …). Each sub-command dispatches to the bundled `impeccable` sub-skill whose prompt references the matching playbook under `references/`.
+[`upstream-lock.json`](./upstream-lock.json) records the exact Impeccable commit and skill version used by the package. The snapshot includes the upstream skill source, references, runtime scripts, CLI engine modules, and Apache license under `references/` and `vendor/impeccable/`.
 
-| Command | Reference |
-|---------|-----------|
-| `/impeccable` | `references/routing.md` (context-aware menu) |
-| `/impeccable-craft` | `references/craft.md` (deprecated alias for new-work) |
-| `/impeccable-shape` | `references/shape.md` |
-| `/impeccable-init` | `references/init.md` |
-| `/impeccable-document` | `references/document.md` |
-| `/impeccable-extract` | `references/extract.md` |
-| `/impeccable-critique` | `references/critique.md` |
-| `/impeccable-audit` | `references/audit.md` (native: `audit.native.md`) |
-| `/impeccable-polish` | `references/polish.md` |
-| `/impeccable-bolder` | `references/bolder.md` |
-| `/impeccable-quieter` | `references/quieter.md` |
-| `/impeccable-distill` | `references/distill.md` |
-| `/impeccable-harden` | `references/harden.md` |
-| `/impeccable-onboard` | `references/onboard.md` |
-| `/impeccable-animate` | `references/animate.md` |
-| `/impeccable-colorize` | `references/colorize.md` |
-| `/impeccable-typeset` | `references/typeset.md` |
-| `/impeccable-layout` | `references/layout.md` |
-| `/impeccable-delight` | `references/delight.md` |
-| `/impeccable-overdrive` | `references/overdrive.md` |
-| `/impeccable-clarify` | `references/clarify.md` |
-| `/impeccable-adapt` | `references/adapt.md` (native: `adapt.native.md`) |
-| `/impeccable-optimize` | `references/optimize.md` |
-| `/impeccable-live` | `references/live.md` (web only) |
-
-## Tools
-
-Every `Bash(npx impeccable …)` and `Bash(node .opencode/skills/impeccable/scripts/…)` invocation the upstream skill asks the LLM to make is replaced by a typed tool:
-
-| Tool | What it wraps |
-|------|---------------|
-| `impeccable_context` | Loads PRODUCT.md / DESIGN.md / surface brief / native platform guidance once per session. |
-| `impeccable_detect` | Runs the 59 deterministic detector rules on files, directories, or URLs (`--json`, `--no-config`). |
-| `impeccable_doctor` | Reports (and optionally repairs) drift between project Impeccable artifacts and the installed version. |
-| `impeccable_install` | Installs the bundled CLI and skill files (`--scope=project|global`, `--force`). |
-| `impeccable_update` | Refreshes the install to the latest version. |
-| `impeccable_check` | Checks whether a newer version is available. |
-| `impeccable_pin` | Creates or removes a standalone `/<command>` shortcut. |
-| `impeccable_hooks_status` | Shows hook state, ignore rules, and env overrides. |
-| `impeccable_hooks_toggle` | Enables or disables the post-edit hook (writes `hook.enabled`). |
-| `impeccable_hooks_ignore_value` | Suppresses one rule+value combination (`--shared` / `--local`, optional `--files=`). |
-| `impeccable_hooks_ignore_rule` | Suppresses a whole detector rule across the project. |
-| `impeccable_hooks_ignore_file` | Suppresses every rule for one file. |
-| `impeccable_hooks_reset` | Resets `.impeccable/config.json` and `config.local.json`. |
-| `impeccable_ignores` | Lists, adds, or removes detector ignores via `impeccable ignores`. |
-
-## Post-edit detector hook
-
-The plugin registers a `tool.execute.after` hook that runs `impeccable detect` after every write/edit to a `.tsx`, `.jsx`, `.html`, `.vue`, `.svelte`, `.astro`, `.css`, `.scss`, `.sass`, `.less`, `.ts`, or `.js` file. Findings surface as `tui.toast.show` toasts and as `<system-reminder>` blocks on the next message. The hook is informational (it does not block writes) and respects `hook.enabled` / `hook.quiet` / `.impeccable/config.local.json`. Use `impeccable_hooks_toggle` or the `*_ignore_*` tools to manage it.
-
-Native platform projects (`ios`, `android`, `adaptive`) skip the hook because the bundled detector is web-only.
-
-## Options
-
-| Option | Type | Default | Description |
-|--------|------|---------|-------------|
-| `binary` | string | `impeccable` | Path to the upstream `impeccable` CLI binary |
-| `bootstrap` | boolean | `true` | Best-effort lookup of the bundled binary on plugin load (never blocks) |
-| `refsPath` | string | `<package>/references/SKILL.md` | Override the vendored SKILL.md location (rarely needed) |
-
-## Vendoring references
-
-Upstream references are vendored under `references/` (33 files plus the rewritten `SKILL.md`). Refresh with:
+From this package directory:
 
 ```bash
-bun run sync          # from packages/opencode-impeccable/
-bun run sync:check    # CI mode: exit non-zero on drift
+bun run sync        # update all managed files and the lock to upstream main
+bun run sync:check  # compare all managed files with the immutable locked commit
 ```
 
-The sync script discovers files via the GitHub tree API under `.agents/skills/impeccable/reference/*.md` and auto-deletes stale locals. `SKILL.md` is vendored locally (rewritten to drop Bash) and excluded from deletion.
+Sync refuses truncated GitHub trees, downloads the snapshot as one coherent unit, and removes stale managed files.
 
 ## License
 
-MIT for the plugin source. Vendored reference documents originate from pbakaus/impeccable under Apache License 2.0.
+The plugin source is MIT licensed. Vendored Impeccable files retain the upstream Apache License 2.0 in `vendor/impeccable/LICENSE`.

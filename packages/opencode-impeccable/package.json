@@ -1,7 +1,7 @@
 {
   "name": "@auron-labs/opencode-impeccable",
   "version": "0.2.0",
-  "description": "OpenCode plugin that wires Impeccable's design skill routing, detector rules, and post-edit hook into typed tools and commands.",
+  "description": "Self-contained OpenCode port of Impeccable with editing commands, typed workflow tools, and a post-edit design detector.",
   "license": "MIT",
   "type": "module",
   "sideEffects": false,
@@ -16,6 +16,8 @@
   "files": [
     "dist",
     "references",
+    "vendor",
+    "upstream-lock.json",
     "README.md",
     "CHANGELOG.md"
   ],
@@ -30,8 +32,20 @@
   "publishConfig": {
     "access": "public"
   },
+  "engines": {
+    "node": ">=22.18.0"
+  },
   "dependencies": {
-    "@opencode-ai/plugin": "^1.17.15"
+    "@opencode-ai/plugin": "^1.17.15",
+    "css-select": "^7.0.0",
+    "css-tree": "^3.2.1",
+    "domutils": "^4.0.2",
+    "fflate": "^0.8.3",
+    "htmlparser2": "^12.0.0",
+    "marked": "^18.0.5"
+  },
+  "optionalDependencies": {
+    "puppeteer": "^25.1.0"
   },
   "devDependencies": {
     "@types/node": "^26.1.1",

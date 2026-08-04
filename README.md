@@ -11,7 +11,7 @@ OpenCode plugin workspace with small, focused packages for codebase indexing, au
 | Package | Use it for | Install |
 | --- | --- | --- |
 | [@auron-labs/opencode-codebase-memory](./packages/opencode-codebase-memory) | OpenCode plugin for codebase-memory-mcp with startup indexing for the active project. | `bun add @auron-labs/opencode-codebase-memory` |
-| [@auron-labs/opencode-impeccable](./packages/opencode-impeccable) | OpenCode plugin that wires Impeccable's design skill routing, detector rules, and post-edit hook into typed tools and commands. | `bun add @auron-labs/opencode-impeccable` |
+| [@auron-labs/opencode-impeccable](./packages/opencode-impeccable) | Self-contained OpenCode port of Impeccable with editing commands, typed workflow tools, and a post-edit design detector. | `bun add @auron-labs/opencode-impeccable` |
 | [@auron-labs/opencode-improve](./packages/opencode-improve) | OpenCode plugin that injects an improve subagent for auditing codebases and writing self-contained implementation plans. | `bun add @auron-labs/opencode-improve` |
 | [@auron-labs/opencode-omniroute-auth](./packages/opencode-omniroute-auth) | OpenCode authentication plugin for OmniRoute API with /connect command and dynamic model fetching | `bun add @auron-labs/opencode-omniroute-auth` |
 | [@auron-labs/opencode-worktrunk](./packages/opencode-worktrunk) | OpenCode plugin that wraps the Worktrunk CLI (`wt`) for git worktree management — list, switch/create, remove, merge, step, and arbitrary `wt` passthrough. | `bun add @auron-labs/opencode-worktrunk` |

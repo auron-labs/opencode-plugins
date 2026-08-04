@@ -1,272 +1,269 @@
 import {
   mkdir,
-  readdir,
   readFile,
-  unlink,
+  readdir,
+  rm,
   writeFile,
 } from "node:fs/promises"
-import { dirname, join, resolve } from "node:path"
-import process from "node:process"
+import { dirname, join, relative, resolve } from "node:path"
+import { pathToFileURL } from "node:url"
 
 export const REPO = "pbakaus/impeccable"
-export const REF = "main"
-export const SKILL_PATH = ".agents/skills/impeccable"
+export const BRANCH = "main"
+export const SKILL_PATH = "skill"
 export const REFERENCES_SUBDIR = "reference"
-export const SKILL_FILENAME = "SKILL.md"
 
-export const treeUrl = (repo = REPO, ref = REF) =>
+const PACKAGE_ROOT = resolve(import.meta.dirname, "..")
+const LOCK_PATH = join(PACKAGE_ROOT, "upstream-lock.json")
+const MANAGED_ROOTS = [
+  "references",
+  "vendor/impeccable/skill/agents",
+  "vendor/impeccable/skill/scripts",
+  "vendor/impeccable/cli",
+]
+
+export const treeUrl = (ref, repo = REPO) =>
   `https://api.github.com/repos/${repo}/git/trees/${ref}?recursive=1`
 
-export const rawUrl = (
-  upstream,
-  {
-    repo = REPO,
-    ref = REF,
-    skillPath = SKILL_PATH,
-    referencesSubdir = REFERENCES_SUBDIR,
-  } = {},
-) =>
-  `https://raw.githubusercontent.com/${repo}/${ref}/${skillPath}/${referencesSubdir}/${upstream}`
+export const commitUrl = (branch = BRANCH, repo = REPO) =>
+  `https://api.github.com/repos/${repo}/commits/${branch}`
 
-export function filterImpeccableReferences(tree, options = {}) {
-  const skillPath = options.skillPath ?? SKILL_PATH
-  const referencesSubdir = options.referencesSubdir ?? REFERENCES_SUBDIR
-  const skillFilename = options.skillFilename ?? SKILL_FILENAME
+export const rawUrl = (path, ref, repo = REPO) =>
+  `https://raw.githubusercontent.com/${repo}/${ref}/${path}`
 
+export function filterImpeccableFiles(tree) {
   if (!tree || tree.truncated === true) {
-    throw new Error(
-      `Tree response for ${REPO}@${REF} was truncated; cannot reliably discover all files.`,
-    )
+    throw new Error(`Tree response for ${REPO} was truncated; refusing to sync a partial runtime.`)
   }
-  const refPrefix = `${skillPath}/${referencesSubdir}/`
   const files = []
   for (const entry of tree.tree ?? []) {
-    if (!entry || entry.type !== "blob") continue
-    // Vendored SKILL.md is rewritten by the plugin (no Bash), so it is NOT
-    // synced from upstream — we ship our own.
-    if (entry.path === `${skillPath}/${skillFilename}`) continue
-    if (!entry.path.startsWith(refPrefix)) continue
-    if (!entry.path.endsWith(".md")) continue
-    const rel = entry.path.slice(refPrefix.length)
-    if (rel.length === 0 || rel.includes("/")) continue
-    files.push({ local: rel, upstream: rel })
+    if (!entry || entry.type !== "blob" || typeof entry.path !== "string") continue
+    const local = localPathForUpstream(entry.path)
+    if (local) files.push({ upstream: entry.path, local })
   }
-  files.sort((a, b) => a.local.localeCompare(b.local))
-  return files
+  return files.sort((left, right) => left.local < right.local ? -1 : left.local > right.local ? 1 : 0)
 }
 
-export function findStaleLocals(files, localNames) {
-  const upstream = new Set(files.map((f) => f.local))
-  return [...new Set(localNames)]
-    .filter((name) => !upstream.has(name))
+export function localPathForUpstream(path) {
+  if (path === "skill/SKILL.src.md") return "references/SKILL.md"
+  if (path === "LICENSE") return "vendor/impeccable/LICENSE"
+  if (path.startsWith("skill/reference/")) {
+    return `references/${path.slice("skill/reference/".length)}`
+  }
+  if (path.startsWith("skill/agents/")) {
+    return `vendor/impeccable/skill/agents/${path.slice("skill/agents/".length)}`
+  }
+  if (path.startsWith("skill/scripts/")) {
+    return `vendor/impeccable/skill/scripts/${path.slice("skill/scripts/".length)}`
+  }
+  if (path.startsWith("cli/")) {
+    return `vendor/impeccable/cli/${path.slice("cli/".length)}`
+  }
+  return null
+}
+
+export function findStaleLocals(files, localPaths) {
+  const expected = new Set(files.map((file) => file.local))
+  return [...new Set(localPaths)]
+    .filter((path) => !expected.has(path))
     .sort()
 }
 
 export function diffLines(prefix, local, upstream) {
-  const localLines = local.split("\n")
-  const upstreamLines = upstream.split("\n")
-  const max = Math.max(localLines.length, upstreamLines.length)
+  const left = local.split("\n")
+  const right = upstream.split("\n")
   const out = []
-  for (let i = 0; i < max; i += 1) {
-    const l = localLines[i] ?? ""
-    const u = upstreamLines[i] ?? ""
-    if (l !== u) {
-      out.push(`${prefix}  ${String(i + 1).padStart(4, " ")} - ${l}`)
-      out.push(`${prefix}  ${String(i + 1).padStart(4, " ")} + ${u}`)
-    }
+  for (let index = 0; index < Math.max(left.length, right.length); index += 1) {
+    if ((left[index] ?? "") === (right[index] ?? "")) continue
+    out.push(`${prefix}${String(index + 1).padStart(5, " ")} - ${left[index] ?? ""}`)
+    out.push(`${prefix}${String(index + 1).padStart(5, " ")} + ${right[index] ?? ""}`)
   }
   return out.join("\n")
 }
 
-function resolveTargetDir(argv) {
-  const fromArgs = argv.find((a) => a.startsWith("--dir="))
-  if (fromArgs) return resolve(process.cwd(), fromArgs.slice("--dir=".length))
-  return resolve(
-    import.meta.dirname,
-    "..",
-    "references",
-  )
+async function loadLock() {
+  return JSON.parse(await readFile(LOCK_PATH, "utf8"))
 }
 
-async function discoverFiles() {
-  const res = await fetch(treeUrl(), {
-    headers: { Accept: "application/vnd.github+json" },
+async function fetchJson(url) {
+  const response = await fetch(url, {
+    headers: {
+      Accept: "application/vnd.github+json",
+      "User-Agent": "opencode-impeccable-sync",
+    },
   })
-  if (!res.ok) {
-    throw new Error(
-      `Failed to list ${REPO}@${REF} tree: ${res.status} ${res.statusText}`,
-    )
+  if (!response.ok) throw new Error(`Failed to fetch ${url}: ${response.status} ${response.statusText}`)
+  return response.json()
+}
+
+async function fetchText(url) {
+  const response = await fetch(url, {
+    headers: { "User-Agent": "opencode-impeccable-sync" },
+    redirect: "follow",
+  })
+  if (!response.ok) throw new Error(`Failed to fetch ${url}: ${response.status} ${response.statusText}`)
+  return response.text()
+}
+
+async function resolveLatestLock(current) {
+  const commit = await fetchJson(commitUrl())
+  const sha = commit.sha
+  const builtSkill = await fetchText(rawUrl(".agents/skills/impeccable/SKILL.md", sha))
+  const version = builtSkill.match(/^version:\s*(.+)$/m)?.[1]?.trim()
+  if (!sha || !version) throw new Error("Unable to resolve upstream commit or skill version")
+  return {
+    ...current,
+    commit: sha,
+    committedAt: commit.commit?.committer?.date ?? commit.commit?.author?.date ?? null,
+    skillVersion: version,
   }
-  const tree = await res.json()
-  const files = filterImpeccableReferences(tree)
-  if (files.length === 0) {
-    throw new Error(
-      `No reference files discovered at ${SKILL_PATH}/${REFERENCES_SUBDIR}/ in ${REPO}@${REF}.`,
-    )
+}
+
+async function discoverFiles(ref) {
+  const tree = await fetchJson(treeUrl(ref))
+  const files = filterImpeccableFiles(tree)
+  if (files.length < 20) {
+    throw new Error(`Only ${files.length} managed files discovered at ${REPO}@${ref}; refusing partial sync.`)
   }
   return files
 }
 
-async function fetchAll(files) {
-  const results = new Map()
-  await Promise.all(
-    files.map(async ({ local, upstream }) => {
-      const res = await fetch(rawUrl(upstream), { redirect: "follow" })
-      if (!res.ok) {
-        throw new Error(
-          `Failed to fetch ${upstream} from ${REPO}@${REF}: ${res.status} ${res.statusText}`,
-        )
-      }
-      const body = await res.text()
-      results.set(local, body)
-      console.log(`  fetched ${local} (${body.length} bytes)`)
-    }),
-  )
-  return results
-}
-
-async function readLocal(files, targetDir) {
+async function fetchFiles(files, ref) {
   const out = new Map()
-  await Promise.all(
-    files.map(async ({ local }) => {
-      try {
-        out.set(local, await readFile(join(targetDir, local), "utf8"))
-      } catch (error) {
-        if (error.code === "ENOENT") out.set(local, null)
-        else throw error
-      }
-    }),
-  )
+  const queue = [...files]
+  const workers = Array.from({ length: Math.min(12, queue.length) }, async () => {
+    while (queue.length) {
+      const file = queue.shift()
+      out.set(file.local, await fetchText(rawUrl(file.upstream, ref)))
+    }
+  })
+  await Promise.all(workers)
   return out
 }
 
-async function listLocal(targetDir, skillFilename = SKILL_FILENAME) {
+async function listManagedFiles() {
+  const out = []
+  for (const root of MANAGED_ROOTS) {
+    const absolute = join(PACKAGE_ROOT, root)
+    await walk(absolute, async (path) => out.push(relative(PACKAGE_ROOT, path).split("\\").join("/")))
+  }
+  const license = join(PACKAGE_ROOT, "vendor/impeccable/LICENSE")
   try {
-    return (await readdir(targetDir))
-      .filter((name) => name.endsWith(".md"))
-      .filter((name) => name !== skillFilename)
+    await readFile(license)
+    out.push("vendor/impeccable/LICENSE")
+  } catch {}
+  return out
+}
+
+async function walk(directory, visit) {
+  let entries
+  try {
+    entries = await readdir(directory, { withFileTypes: true })
   } catch (error) {
-    if (error.code === "ENOENT") return []
+    if (error.code === "ENOENT") return
     throw error
   }
-}
-
-async function writeAll(files, targetDir) {
-  await Promise.all(
-    [...files.entries()].map(async ([name, body]) => {
-      const target = join(targetDir, name)
-      await mkdir(dirname(target), { recursive: true })
-      await writeFile(target, body, "utf8")
-    }),
-  )
-}
-
-async function deleteStale(paths, targetDir) {
-  await Promise.all(
-    paths.map(async (name) => {
-      await unlink(join(targetDir, name))
-    }),
-  )
-}
-
-function printUsage(targetDir) {
-  console.log(
-    [
-      `Usage: node scripts/sync-impeccable-upstream.mjs [command]`,
-      ``,
-      `Commands:`,
-      `  (default)  Discover ${SKILL_PATH}/${REFERENCES_SUBDIR}/*.md in ${REPO}@${REF}, write them to the package's references/, and remove any local *.md files no longer present upstream. SKILL.md is vendored locally so it is NOT synced.`,
-      `  check      Same discovery, but compare against local copies and exit non-zero on missing, changed, or stale-extra files (no writes).`,
-      `  help       Show this message.`,
-      ``,
-      `Discovery:  ${REPO}@${REF} git tree (recursive) -> flat *.md under ${SKILL_PATH}/${REFERENCES_SUBDIR}/.`,
-      `  Renames and additions are picked up automatically. Removed upstream files are deleted locally.`,
-      `Target:     ${targetDir}`,
-    ].join("\n"),
-  )
-}
-
-async function runSync(targetDir) {
-  console.log(`Syncing ${REPO}@${REF}/${SKILL_PATH}/${REFERENCES_SUBDIR} -> ${targetDir}`)
-  const files = await discoverFiles()
-  console.log(`Discovered ${files.length} file(s):`)
-  for (const f of files) console.log(`  - ${f.local}`)
-
-  const fetched = await fetchAll(files)
-  const local = await readLocal(files, targetDir)
-  const localNames = await listLocal(targetDir)
-  const staleLocals = findStaleLocals(files, localNames)
-
-  const changes = []
-  const newFiles = []
-  for (const [path, body] of fetched) {
-    const existing = local.get(path)
-    if (existing === null) newFiles.push(path)
-    else if (existing !== body) changes.push(path)
+  for (const entry of entries) {
+    const path = join(directory, entry.name)
+    if (entry.isDirectory()) await walk(path, visit)
+    else if (entry.isFile()) await visit(path)
   }
-
-  await writeAll(fetched, targetDir)
-  if (staleLocals.length > 0) {
-    await deleteStale(staleLocals, targetDir)
-  }
-
-  for (const path of newFiles) console.log(`  added   ${path}`)
-  for (const path of changes) console.log(`  updated ${path}`)
-  for (const path of staleLocals) console.log(`  removed ${path}`)
-
-  if (newFiles.length === 0 && changes.length === 0 && staleLocals.length === 0) {
-    console.log("No changes.")
-  }
-  return 0
 }
 
-async function runCheck(targetDir) {
-  console.log(`Checking ${REPO}@${REF}/${SKILL_PATH}/${REFERENCES_SUBDIR} against ${targetDir}`)
-  const files = await discoverFiles()
-  const fetched = await fetchAll(files)
-  const local = await readLocal(files, targetDir)
-  const localNames = await listLocal(targetDir)
-  const staleLocals = findStaleLocals(files, localNames)
-
-  const diffs = []
-  for (const [path, body] of fetched) {
-    const existing = local.get(path)
-    if (existing === null) diffs.push(`missing local file: ${path}`)
-    else if (existing !== body) {
-      diffs.push(`differs: ${path}`)
-      diffs.push(diffLines("    ", existing, body))
+async function readLocal(files) {
+  const out = new Map()
+  await Promise.all(files.map(async ({ local }) => {
+    try {
+      out.set(local, await readFile(join(PACKAGE_ROOT, local), "utf8"))
+    } catch (error) {
+      if (error.code === "ENOENT") out.set(local, null)
+      else throw error
     }
-  }
-  for (const path of staleLocals) {
-    diffs.push(`stale local file (not in upstream): ${path}`)
-  }
-
-  if (diffs.length === 0) {
-    console.log("Up to date.")
-    return 0
-  }
-  console.error("Local copies are out of date with upstream:")
-  for (const line of diffs) console.error(line)
-  console.error(`\nRun \`bun run sync\` in packages/opencode-impeccable to refresh.`)
-  return 1
+  }))
+  return out
 }
 
-const argv = process.argv.slice(2)
-const command = argv[0] ?? "sync"
-const targetDir = resolveTargetDir(argv.slice(1))
+async function writeAll(contents) {
+  await Promise.all([...contents].map(async ([local, body]) => {
+    const target = join(PACKAGE_ROOT, local)
+    await mkdir(dirname(target), { recursive: true })
+    await writeFile(target, body, "utf8")
+  }))
+}
 
-switch (command) {
-  case "sync":
-    process.exit(await runSync(targetDir))
-  case "check":
-    process.exit(await runCheck(targetDir))
-  case "help":
-  case "--help":
-  case "-h":
-    printUsage(targetDir)
-    process.exit(0)
-  default:
-    console.error(`Unknown command: ${command}\n`)
-    printUsage(targetDir)
-    process.exit(2)
+async function prune(paths) {
+  await Promise.all(paths.map((path) => rm(join(PACKAGE_ROOT, path), { force: true })))
+}
+
+function compare(files, upstream, local, stale) {
+  const missing = []
+  const changed = []
+  for (const { local: path } of files) {
+    const current = local.get(path)
+    if (current === null) missing.push(path)
+    else if (current !== upstream.get(path)) changed.push(path)
+  }
+  return { missing, changed, stale }
+}
+
+async function sync() {
+  const current = await loadLock()
+  const lock = await resolveLatestLock(current)
+  const files = await discoverFiles(lock.commit)
+  const upstream = await fetchFiles(files, lock.commit)
+  const localPaths = await listManagedFiles()
+  const stale = findStaleLocals(files, localPaths)
+  const local = await readLocal(files)
+  const report = compare(files, upstream, local, stale)
+  await writeAll(upstream)
+  await prune(stale)
+  await writeFile(LOCK_PATH, `${JSON.stringify(lock, null, 2)}\n`, "utf8")
+  printReport(`Synced ${REPO}@${lock.commit}`, report)
+}
+
+async function check() {
+  const lock = await loadLock()
+  const files = await discoverFiles(lock.commit)
+  const upstream = await fetchFiles(files, lock.commit)
+  const localPaths = await listManagedFiles()
+  const stale = findStaleLocals(files, localPaths)
+  const local = await readLocal(files)
+  const report = compare(files, upstream, local, stale)
+  printReport(`Checked ${REPO}@${lock.commit}`, report)
+  if (report.missing.length || report.changed.length || report.stale.length) process.exitCode = 1
+}
+
+function printReport(heading, report) {
+  console.log(heading)
+  for (const path of report.missing) console.log(`  missing ${path}`)
+  for (const path of report.changed) console.log(`  changed ${path}`)
+  for (const path of report.stale) console.log(`  stale   ${path}`)
+  if (!report.missing.length && !report.changed.length && !report.stale.length) console.log("  up to date")
+}
+
+function usage() {
+  console.log("Usage: node scripts/sync-impeccable-upstream.mjs [sync|check|help]")
+  console.log("  sync   Resolve upstream main, vendor one coherent snapshot, and update upstream-lock.json")
+  console.log("  check  Compare local assets with the commit already recorded in upstream-lock.json")
+}
+
+export function isMainModule(metaUrl = import.meta.url, argvPath = process.argv[1]) {
+  if (!argvPath) return false
+  return metaUrl === pathToFileURL(resolve(argvPath)).href
+}
+
+if (isMainModule()) {
+  const command = process.argv[2] ?? "sync"
+  try {
+    if (command === "sync") await sync()
+    else if (command === "check") await check()
+    else if (["help", "--help", "-h"].includes(command)) usage()
+    else {
+      usage()
+      process.exitCode = 2
+    }
+  } catch (error) {
+    console.error(error instanceof Error ? error.message : String(error))
+    process.exitCode = 1
+  }
 }
