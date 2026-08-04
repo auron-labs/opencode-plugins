@@ -1,6 +1,6 @@
 {
   "name": "@auron-labs/opencode-impeccable",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "OpenCode plugin that wires Impeccable's design skill routing, detector rules, and post-edit hook into typed tools and commands.",
   "license": "MIT",
   "type": "module",

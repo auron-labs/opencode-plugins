@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.4.0](https://github.com/auron-labs/opencode-plugins/compare/@auron-labs/opencode-improve-v0.3.0...@auron-labs/opencode-improve-v0.4.0) (2026-08-03)
+
+
+### Features
+
+* change improve hint ([8962822](https://github.com/auron-labs/opencode-plugins/commit/896282214cbea86bfef44f313b043774185b7cc0))
+
+
+### Bug Fixes
+
+* **improve:** pre-approve reads of bundled references dir ([403cb83](https://github.com/auron-labs/opencode-plugins/commit/403cb83b6398ee75dfc79c5d55bd368bb7df851d))
+
 ## [0.3.0](https://github.com/auron-labs/opencode-plugins/compare/@auron-labs/opencode-improve-v0.2.0...@auron-labs/opencode-improve-v0.3.0) (2026-07-02)
 
 
