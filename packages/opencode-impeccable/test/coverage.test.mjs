@@ -24,6 +24,9 @@ test("the pinned snapshot includes the scripts and detector entrypoints needed a
     "skill/scripts/hook-admin.mjs",
     "skill/scripts/live.mjs",
     "cli/engine/detect-antipatterns.mjs",
+    "cli/bin/cli.js",
+    "cli/bin/commands/ignores.mjs",
+    "cli/bin/commands/skills.mjs",
   ]
   for (const path of required) {
     const contents = readFileSync(join(packageRoot, "vendor", "impeccable", path), "utf8")

@@ -208,3 +208,7 @@ vite.config.ts.timestamp-*
 !.env.example
 !.env.ci
 # END genignore
+
+# Vendored Impeccable CLI entrypoint is required in published packages.
+!packages/opencode-impeccable/vendor/impeccable/cli/bin/
+!packages/opencode-impeccable/vendor/impeccable/cli/bin/**

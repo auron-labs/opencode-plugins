@@ -47,6 +47,7 @@ Restart OpenCode after changing plugin config.
 ## What it does
 
 - Adds an OpenCode MCP config entry for `codebase-memory-mcp`.
+- Sets the MCP server process CWD to the resolved project root.
 - Disables upstream `auto_index` config by default so the MCP server cannot index an unsafe process CWD.
 - Resolves the active OpenCode directory to its Git root or nearest project marker root.
 - Checks whether the resolved project root is already indexed.

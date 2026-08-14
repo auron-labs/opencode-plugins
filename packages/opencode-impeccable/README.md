@@ -2,7 +2,7 @@
 
 A self-contained OpenCode port of [pbakaus/impeccable](https://github.com/pbakaus/impeccable). It provides the `/impeccable` menu, 23 implementation commands, typed workflow tools, and automatic design checks after edits.
 
-The plugin vendors a version-locked upstream snapshot. It does not install or invoke a separate `impeccable` executable, and its hidden implementation agent inherits the user's OpenCode permissions instead of forcing read-only access.
+The plugin vendors a version-locked upstream snapshot. It does not install or invoke a separate `impeccable` executable, and its hidden primary implementation agent inherits the user's OpenCode permissions instead of forcing read-only access.
 
 ## Install
 
@@ -42,7 +42,7 @@ No standalone Impeccable CLI installation is required.
 /impeccable-optimize    /impeccable-live
 ```
 
-Each command delegates to a hidden, capable Impeccable subagent. Four upstream specialist agents—asset production, finish review, design-system documentation, and live copy-edit application—are also registered for the playbooks that require independent handoffs. These agents use the permissions already configured by the user; the plugin does not force a read-only policy or inspect global OpenCode configuration to second-guess those permissions.
+Each command runs through a hidden, capable primary Impeccable agent. Four upstream specialist agents—asset production, finish review, design-system documentation, and live copy-edit application—are also registered as subagents for the playbooks that require independent handoffs. These agents use the permissions already configured by the user; the plugin does not force a read-only policy or inspect global OpenCode configuration to second-guess those permissions.
 
 ## Native tools
 
@@ -56,6 +56,8 @@ The plugin exposes 29 typed tools so upstream playbooks never need `npx impeccab
 - the complete live-design server, polling, resume, completion, insertion, and wrapping workflow.
 
 Install, update, and version-check tools are intentionally absent. Updating the OpenCode plugin updates its coherent runtime snapshot.
+
+Filesystem-bearing `impeccable_*` arguments are confined to the active worktree: absolute paths, `../` traversal, and symlink escapes outside it are rejected before any bundled script runs. Detector and critique-storage targets also accept `http:`/`https:` URLs where documented. For intentional operations on external paths, use OpenCode's own permission-aware file tools instead.
 
 ## Post-edit detector
 

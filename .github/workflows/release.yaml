@@ -71,6 +71,20 @@ jobs:
         working-directory: ${{ matrix.package }}
         run: bun run build
 
+      - name: Test package
+        working-directory: ${{ matrix.package }}
+        run: bun run test
+
+      - name: Verify Impeccable snapshot
+        if: ${{ matrix.package == 'packages/opencode-impeccable' }}
+        working-directory: ${{ matrix.package }}
+        run: bun run sync:check
+
+      - name: Verify Impeccable package contents
+        if: ${{ matrix.package == 'packages/opencode-impeccable' }}
+        working-directory: ${{ matrix.package }}
+        run: bun run check:pack
+
       - name: Configure npm auth
         run: npm config set //registry.npmjs.org/:_authToken "$NPM_TOKEN"
         env:
@@ -111,6 +125,20 @@ jobs:
       - name: Build package
         working-directory: ${{ inputs.package }}
         run: bun run build
+
+      - name: Test package
+        working-directory: ${{ inputs.package }}
+        run: bun run test
+
+      - name: Verify Impeccable snapshot
+        if: ${{ inputs.package == 'packages/opencode-impeccable' }}
+        working-directory: ${{ inputs.package }}
+        run: bun run sync:check
+
+      - name: Verify Impeccable package contents
+        if: ${{ inputs.package == 'packages/opencode-impeccable' }}
+        working-directory: ${{ inputs.package }}
+        run: bun run check:pack
 
       - name: Configure npm auth
         run: npm config set //registry.npmjs.org/:_authToken "$NPM_TOKEN"

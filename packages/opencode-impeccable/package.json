@@ -26,6 +26,7 @@
     "test": "bun run build && node --test test/*.test.mjs",
     "sync": "node scripts/sync-impeccable-upstream.mjs",
     "sync:check": "node scripts/sync-impeccable-upstream.mjs check",
+    "check:pack": "node scripts/check-package-contents.mjs",
     "prepublishOnly": "bun run build"
   },
   "packageManager": "bun@1.2.23",

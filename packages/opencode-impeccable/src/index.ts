@@ -107,7 +107,7 @@ function buildCommandRecord(command: ImperfectableCommand): Record<string, unkno
     description: describeCommand(command),
     template: lines.join("\n"),
     agent: "impeccable",
-    subtask: true,
+    subtask: false,
   }
 }
 
@@ -123,7 +123,7 @@ function buildMenuCommand(): Record<string, unknown> {
       "Invocation arguments: $ARGUMENTS",
     ].join("\n"),
     agent: "impeccable",
-    subtask: true,
+    subtask: false,
   }
 }
 
@@ -148,7 +148,7 @@ export const ImperfectablePlugin = async (
       agents.impeccable = {
         description:
           "Implement and review Impeccable design workflows, including project edits and verification, using the bundled typed tools.",
-        mode: "subagent",
+        mode: "primary",
         hidden: true,
         prompt,
       }

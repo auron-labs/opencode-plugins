@@ -36,6 +36,7 @@ type Client = {
 type McpConfigEntry = {
   type: "local"
   command: string[]
+  cwd: string
   enabled: boolean
 }
 
@@ -647,6 +648,7 @@ export const CodebaseMemoryPlugin = async ({ client, directory }: PluginContext,
       input.mcp["codebase-memory-mcp"] = {
         type: "local",
         command: [binary],
+        cwd: rootPath,
         enabled: true,
       }
     },

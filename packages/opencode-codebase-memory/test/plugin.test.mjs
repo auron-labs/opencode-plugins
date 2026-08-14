@@ -23,23 +23,53 @@ test('disabled plugin does not inject MCP config', async () => {
 })
 
 test('enabled plugin injects MCP config without startup indexing', async () => {
-  const plugin = await CodebaseMemoryPlugin(
-    { directory: process.cwd() },
-    { enabled: true, indexOnStartup: false, binary: 'codebase-memory-mcp-custom' },
-  )
-  const config = {}
+  const directory = mkdtempSync(join(tmpdir(), 'opencode-codebase-memory-test-'))
 
-  await plugin.config(config)
+  try {
+    mkdirSync(join(directory, '.git'))
+    const plugin = await CodebaseMemoryPlugin(
+      { directory },
+      { enabled: true, indexOnStartup: false, binary: 'codebase-memory-mcp-custom' },
+    )
+    const config = {}
 
-  assert.deepEqual(config, {
-    mcp: {
-      'codebase-memory-mcp': {
-        type: 'local',
-        command: ['codebase-memory-mcp-custom'],
-        enabled: true,
+    await plugin.config(config)
+
+    assert.deepEqual(config, {
+      mcp: {
+        'codebase-memory-mcp': {
+          type: 'local',
+          command: ['codebase-memory-mcp-custom'],
+          cwd: directory,
+          enabled: true,
+        },
       },
-    },
-  })
+    })
+  } finally {
+    rmSync(directory, { recursive: true, force: true })
+  }
+})
+
+test('enabled plugin passes the resolved project root as the MCP cwd', async () => {
+  const directory = mkdtempSync(join(tmpdir(), 'opencode-codebase-memory-test-'))
+  const nested = join(directory, 'packages', 'demo')
+
+  try {
+    mkdirSync(nested, { recursive: true })
+    writeFileSync(join(directory, 'package.json'), '{}')
+
+    const plugin = await CodebaseMemoryPlugin(
+      { directory: nested },
+      { enabled: true, indexOnStartup: false, binary: 'codebase-memory-mcp-custom' },
+    )
+    const config = {}
+
+    await plugin.config(config)
+
+    assert.equal(config.mcp['codebase-memory-mcp'].cwd, directory)
+  } finally {
+    rmSync(directory, { recursive: true, force: true })
+  }
 })
 
 test('disabled plugin reports idle project state without starting indexing', async () => {

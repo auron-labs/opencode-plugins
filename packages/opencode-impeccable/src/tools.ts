@@ -3,10 +3,11 @@ import {
   mkdirSync,
   readFileSync,
   readdirSync,
+  realpathSync,
   rmSync,
   writeFileSync,
 } from "node:fs"
-import { basename, join, resolve } from "node:path"
+import { basename, dirname, isAbsolute, join, relative, resolve } from "node:path"
 import { tool } from "@opencode-ai/plugin"
 import { COMMANDS, describeCommand } from "./commands.js"
 import {
@@ -87,6 +88,7 @@ function contextTool(runtime: ImpeccableRuntime) {
       target: z.string().optional().describe("Optional project-relative file, app, or route used to select a monorepo target."),
     },
     async execute({ target }) {
+      if (target) guardFsPath(runtime, target, "target")
       const result = await runRuntimeScript(runtime, "context.mjs", target ? ["--target", target] : [], {
         timeoutMs: 30_000,
       })
@@ -114,12 +116,19 @@ function detectTool(runtime: ImpeccableRuntime) {
       jsonOutput: z.boolean().optional().describe("Return machine-readable JSON."),
     },
     async execute({ targets, scope, noConfig, jsonOutput }) {
+      for (const target of targets) guardFsPath(runtime, target, "target", { allowUrl: true })
       const args = []
       if (jsonOutput) args.push("--json")
       if (noConfig) args.push("--no-config")
       if (scope) args.push("--scope", scope)
       args.push(...targets)
-      return resultText(await runRuntimeScript(runtime, "detect.mjs", args, { timeoutMs: 120_000 }))
+      const result = await runRuntimeScript(runtime, "detect.mjs", args, {
+        timeoutMs: 120_000,
+        // The bundled detector exits 2 on primary findings while still
+        // producing useful output; its normal outcome is not a failure.
+        allowedExitCodes: [0, 2],
+      })
+      return result.stdout.trim() || result.stderr.trim() || "(no output)"
     },
   })
 }
@@ -133,6 +142,7 @@ function doctorTool(runtime: ImpeccableRuntime) {
       target: z.string().optional().describe("Optional monorepo target path."),
     },
     async execute({ fix, target }) {
+      if (target) guardFsPath(runtime, target, "target")
       const args = ["--json"]
       if (fix) args.push("--fix")
       if (target) args.push("--target", target)
@@ -347,9 +357,11 @@ function critiqueStorageTool(runtime: ImpeccableRuntime) {
       metadata: z.record(z.string(), z.unknown()).optional().describe("Optional snapshot frontmatter metadata."),
     },
     async execute({ action, target, bodyFile, limit, metadata }) {
+      guardFsPath(runtime, target, "target", { allowUrl: true })
       const args = [action, target]
       if (action === "write") {
         if (!bodyFile) throw new Error("bodyFile is required for critique storage write")
+        guardFsPath(runtime, bodyFile, "bodyFile")
         args.push(bodyFile)
       }
       if (action === "trend" && limit) args.push(String(limit))
@@ -377,10 +389,14 @@ function embedPromptTool(runtime: ImpeccableRuntime) {
       promptFile: z.string().optional().describe("File containing the prompt text."),
     },
     async execute({ image, read, prompt, promptFile }) {
+      guardFsPath(runtime, image, "image")
       const args = [image]
       if (read) args.push("--read")
       else if (prompt) args.push("--prompt", prompt)
-      else if (promptFile) args.push("--prompt-file", promptFile)
+      else if (promptFile) {
+        guardFsPath(runtime, promptFile, "promptFile")
+        args.push("--prompt-file", promptFile)
+      }
       else throw new Error("prompt or promptFile is required unless read is true")
       return resultText(await runRuntimeScript(runtime, "embed-prompt.mjs", args))
     },
@@ -399,9 +415,13 @@ function generateImageTool(runtime: ImpeccableRuntime) {
       quality: z.enum(["low", "medium", "high"]).optional().describe("Generation quality."),
     },
     async execute({ output, prompt, promptFile, size, quality }) {
+      guardFsPath(runtime, output, "output")
       const args = ["--out", output]
       if (prompt) args.push("--prompt", prompt)
-      else if (promptFile) args.push("--prompt-file", promptFile)
+      else if (promptFile) {
+        guardFsPath(runtime, promptFile, "promptFile")
+        args.push("--prompt-file", promptFile)
+      }
       else throw new Error("prompt or promptFile is required")
       pushFlag(args, "--size", size)
       pushFlag(args, "--quality", quality)
@@ -421,10 +441,18 @@ function surfaceBriefTool(runtime: ImpeccableRuntime) {
     },
     async execute({ action, target, bodyFile, relatedTargets }) {
       const args: string[] = [action]
-      if (target) args.push(target)
+      if (target) {
+        guardFsPath(runtime, target, "target")
+        args.push(target)
+      }
       if (action === "write") {
         if (!target || !bodyFile) throw new Error("target and bodyFile are required for surface brief write")
-        args.push(bodyFile, ...(relatedTargets ?? []))
+        guardFsPath(runtime, bodyFile, "bodyFile")
+        args.push(bodyFile)
+        for (const related of relatedTargets ?? []) {
+          guardFsPath(runtime, related, "relatedTargets")
+          args.push(related)
+        }
       }
       return resultText(await runRuntimeScript(runtime, "surface-brief.mjs", args, {
         allowedExitCodes: action === "read" ? [0, 2] : [0],
@@ -443,7 +471,10 @@ function serveQuestionTool(runtime: ImpeccableRuntime) {
     },
     async execute({ action, payload, key }) {
       const args = [`--${action}`]
-      if (payload) args.push("--payload", payload)
+      if (payload) {
+        guardFsPath(runtime, payload, "payload")
+        args.push("--payload", payload)
+      }
       if (key) args.push("--key", key)
       return resultText(await runRuntimeScript(runtime, "serve-question.mjs", args, {
         timeoutMs: action === "wait" ? 300_000 : 30_000,
@@ -458,6 +489,7 @@ function liveTool(runtime: ImpeccableRuntime) {
     description: "Prepare bundled Impeccable live variant mode and return its project/server context.",
     args: { target: z.string().optional().describe("Optional monorepo child app or source target.") },
     async execute({ target }) {
+      if (target) guardFsPath(runtime, target, "target")
       return resultText(await runRuntimeScript(runtime, "live.mjs", target ? ["--target", target] : [], { timeoutMs: 60_000 }))
     },
   })
@@ -504,7 +536,10 @@ function livePollTool(runtime: ImpeccableRuntime) {
         args.push("--reply", eventId, reply)
         if (message) args.push(message)
       }
-      if (file) args.push("--file", file)
+      if (file) {
+        guardFsPath(runtime, file, "file")
+        args.push("--file", file)
+      }
       if (data) args.push("--data", JSON.stringify(data))
       if (types?.length) args.push(`--types=${types.join(",")}`)
       if (timeoutMs) args.push(`--timeout=${timeoutMs}`)
@@ -563,6 +598,7 @@ function liveInsertTool(runtime: ImpeccableRuntime) {
       text: z.string().optional(),
     },
     async execute(args) {
+      if (args.file) guardFsPath(runtime, args.file, "file")
       const argv = ["--id", args.id, "--count", String(args.count), "--position", args.position]
       addElementSelectorArgs(argv, args)
       return resultText(await runRuntimeScript(runtime, "live-insert.mjs", argv))
@@ -585,6 +621,7 @@ function liveWrapTool(runtime: ImpeccableRuntime) {
       pageUrl: z.string().optional(),
     },
     async execute(args) {
+      if (args.file) guardFsPath(runtime, args.file, "file")
       const argv = ["--id", args.id, "--count", String(args.count)]
       addElementSelectorArgs(argv, args)
       pushFlag(argv, "--page-url", args.pageUrl)
@@ -640,6 +677,55 @@ function markNativeHookActive(output: string): string {
     /MANUAL_DETECTOR_REQUIRED:[\s\S]*?(?=\n\n---\n|$)/,
     replacement.trimEnd(),
   )
+}
+
+export function guardFsPath(
+  runtime: ImpeccableRuntime,
+  value: string,
+  name: string,
+  options: { allowUrl?: boolean } = {},
+): string {
+  if (value.length === 0 || value.includes("\0")) {
+    throw new Error(`${name} must be a non-empty path without NUL characters`)
+  }
+  if (/^https?:\/\//i.test(value)) {
+    if (options.allowUrl) return value
+  }
+  if (/^[a-z][a-z0-9+.-]*:/i.test(value)) {
+    throw new Error(`${name} only supports http(s) URLs or in-worktree paths`)
+  }
+  let root: string
+  try {
+    root = realpathSync(runtime.worktree)
+  } catch {
+    throw new Error(`${name} could not resolve the active worktree: ${runtime.worktree}`)
+  }
+  const resolved = isAbsolute(value) ? value : join(root, value)
+  const rel = relative(root, canonicalizePath(resolved))
+  if (rel !== "" && (rel.startsWith("..") || isAbsolute(rel))) {
+    throw new Error(`${name} resolves outside the active worktree: ${runtime.worktree}`)
+  }
+  return value
+}
+
+function canonicalizePath(target: string): string {
+  try {
+    return realpathSync(target)
+  } catch {
+    const tail: string[] = []
+    let probe = target
+    for (;;) {
+      const parent = dirname(probe)
+      if (parent === probe) throw new Error(`path has no existing ancestor: ${target}`)
+      tail.unshift(basename(probe))
+      probe = parent
+      try {
+        return join(realpathSync(probe), ...tail)
+      } catch {
+        // walk up to the nearest existing ancestor
+      }
+    }
+  }
 }
 
 export function availableReferenceNames(refsDirAbs: string): string[] {

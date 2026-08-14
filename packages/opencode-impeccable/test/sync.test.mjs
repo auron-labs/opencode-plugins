@@ -24,6 +24,8 @@ test("managed upstream paths map into references and the bundled runtime", () =>
   assert.equal(localPathForUpstream("skill/agents/impeccable-documenter.md"), "vendor/impeccable/skill/agents/impeccable-documenter.md")
   assert.equal(localPathForUpstream("skill/scripts/live/poll-lanes.mjs"), "vendor/impeccable/skill/scripts/live/poll-lanes.mjs")
   assert.equal(localPathForUpstream("cli/engine/detect-antipatterns.mjs"), "vendor/impeccable/cli/engine/detect-antipatterns.mjs")
+  assert.equal(localPathForUpstream("cli/bin/cli.js"), "vendor/impeccable/cli/bin/cli.js")
+  assert.equal(localPathForUpstream("cli/bin/commands/ignores.mjs"), "vendor/impeccable/cli/bin/commands/ignores.mjs")
   assert.equal(localPathForUpstream("README.md"), null)
 })
 

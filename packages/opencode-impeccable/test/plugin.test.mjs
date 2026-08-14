@@ -1,11 +1,12 @@
 import test from "node:test"
 import assert from "node:assert/strict"
-import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs"
-import { join } from "node:path"
+import { existsSync, mkdirSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs"
+import { dirname, join } from "node:path"
 import { tmpdir } from "node:os"
 import { mkdtempSync } from "node:fs"
 
 import pluginModule from "../dist/index.js"
+import { guardFsPath } from "../dist/tools.js"
 
 const EXPECTED_COMMANDS = [
   "craft", "shape", "init", "document", "extract", "critique", "audit", "polish",
@@ -58,10 +59,10 @@ function workspace() {
   return root
 }
 
-async function createPlugin(root, client) {
+async function createPlugin(root, client, options = {}) {
   return pluginModule.server(
     { directory: root, worktree: root, client },
-    { nodePath: process.execPath },
+    { nodePath: process.execPath, ...options },
   )
 }
 
@@ -70,7 +71,7 @@ test("plugin exports its id and server", () => {
   assert.equal(typeof pluginModule.server, "function")
 })
 
-test("commands use a capable hidden subagent without overriding user permissions", async () => {
+test("commands use a capable hidden primary agent without overriding user permissions", async () => {
   const root = workspace()
   try {
     const plugin = await createPlugin(root)
@@ -78,12 +79,14 @@ test("commands use a capable hidden subagent without overriding user permissions
     await plugin.config(config)
 
     assert.equal(config.agent.impeccable.hidden, true)
-    assert.equal(config.agent.impeccable.mode, "subagent")
+    assert.equal(config.agent.impeccable.mode, "primary")
     assert.equal("permission" in config.agent.impeccable, false)
     assert.match(config.agent.impeccable.description, /Implement/)
     assert.match(config.agent.impeccable.prompt, /implementation agent, not a read-only planner/)
     assert.match(config.agent.impeccable.prompt, /impeccable_reference/)
     assert.doesNotMatch(config.agent.impeccable.prompt, /Bash\(npx impeccable/)
+    assert.equal(config.command.impeccable.agent, "impeccable")
+    assert.equal(config.command.impeccable.subtask, false)
     for (const name of EXPECTED_AUXILIARY_AGENTS) {
       assert.equal(config.agent[name].hidden, true)
       assert.equal(config.agent[name].mode, "subagent")
@@ -97,7 +100,7 @@ test("commands use a capable hidden subagent without overriding user permissions
       const entry = config.command[`impeccable-${command}`]
       assert.ok(entry, `missing impeccable-${command}`)
       assert.equal(entry.agent, "impeccable")
-      assert.equal(entry.subtask, true)
+      assert.equal(entry.subtask, false)
       assert.match(entry.template, /impeccable_reference/)
     }
   } finally {
@@ -188,6 +191,136 @@ test("context uses the bundled runtime and recognizes the native detector hook",
     assert.match(output, /NO_PRODUCT_MD|RESOLVED_CONTEXT/)
     assert.match(output, /AUTOMATIC_DETECTOR_ACTIVE/)
     assert.doesNotMatch(output, /MANUAL_DETECTOR_REQUIRED/)
+  } finally {
+    rmSync(root, { recursive: true, force: true })
+  }
+})
+
+test("path guard accepts relative and absolute in-worktree paths", () => {
+  const root = workspace()
+  try {
+    const runtime = { worktree: root }
+    const inside = join(root, "src", "ui.ts")
+    mkdirSync(dirname(inside), { recursive: true })
+    writeFileSync(inside, "")
+    assert.equal(guardFsPath(runtime, "src/ui.ts", "target"), "src/ui.ts")
+    assert.equal(guardFsPath(runtime, inside, "target"), inside)
+    assert.equal(guardFsPath(runtime, root, "target"), root)
+    assert.equal(guardFsPath(runtime, ".", "target"), ".")
+    assert.throws(() => guardFsPath(runtime, "../outside", "target"), /outside the active worktree/)
+    assert.throws(() => guardFsPath(runtime, "/etc/passwd", "target"), /outside the active worktree/)
+    assert.throws(() => guardFsPath(runtime, "", "target"), /non-empty/)
+    assert.throws(() => guardFsPath(runtime, "a\0b", "target"), /NUL/)
+  } finally {
+    rmSync(root, { recursive: true, force: true })
+  }
+})
+
+test("path guard rejects in-worktree symlinks escaping the worktree", (t) => {
+  const root = workspace()
+  const outside = mkdtempSync(join(tmpdir(), "opencode-impeccable-outside-"))
+  try {
+    const runtime = { worktree: root }
+    try {
+      symlinkSync(outside, join(root, "link"))
+    } catch {
+      t.skip("symlinks are not supported on this platform")
+      return
+    }
+    assert.throws(() => guardFsPath(runtime, "link/file.png", "output"), /outside the active worktree/)
+    assert.throws(
+      () => guardFsPath(runtime, join(root, "link", "missing", "file.png"), "output"),
+      /outside the active worktree/,
+    )
+  } finally {
+    rmSync(outside, { recursive: true, force: true })
+    rmSync(root, { recursive: true, force: true })
+  }
+})
+
+test("path guard allows http(s) only with explicit URL support", () => {
+  const root = workspace()
+  try {
+    const runtime = { worktree: root }
+    assert.equal(
+      guardFsPath(runtime, "https://example.com/page", "target", { allowUrl: true }),
+      "https://example.com/page",
+    )
+    assert.equal(
+      guardFsPath(runtime, "http://example.com/page", "target", { allowUrl: true }),
+      "http://example.com/page",
+    )
+    assert.throws(
+      () => guardFsPath(runtime, "file:///etc/passwd", "target", { allowUrl: true }),
+      /only supports http\(s\)/,
+    )
+    assert.throws(
+      () => guardFsPath(runtime, "data:text/plain,hi", "target", { allowUrl: true }),
+      /only supports http\(s\)/,
+    )
+    assert.throws(() => guardFsPath(runtime, "https://example.com", "output"), /only supports http\(s\)/)
+  } finally {
+    rmSync(root, { recursive: true, force: true })
+  }
+})
+
+test("generate_image rejects external output before launching", async () => {
+  const root = workspace()
+  const outside = mkdtempSync(join(tmpdir(), "opencode-impeccable-image-"))
+  try {
+    const plugin = await createPlugin(root)
+    await assert.rejects(
+      plugin.tool.impeccable_generate_image.execute({ output: join(outside, "img.png"), prompt: "test" }, {}),
+      /outside the active worktree/,
+    )
+    assert.equal(existsSync(join(outside, "img.png")), false)
+  } finally {
+    rmSync(outside, { recursive: true, force: true })
+    rmSync(root, { recursive: true, force: true })
+  }
+})
+
+test("detect returns JSON findings for a primary rule without throwing", async () => {
+  const root = workspace()
+  try {
+    writeFileSync(join(root, "bad.css"), ".brand { font-family: Inter; }\n")
+    const plugin = await createPlugin(root)
+    const output = await plugin.tool.impeccable_detect.execute({ targets: ["bad.css"], jsonOutput: true }, {})
+    const findings = JSON.parse(output)
+    assert.equal(Array.isArray(findings), true)
+    assert.ok(findings.length > 0)
+    assert.equal(findings[0].antipattern, "overused-font")
+    assert.match(findings[0].file, /bad\.css$/)
+  } finally {
+    rmSync(root, { recursive: true, force: true })
+  }
+})
+
+test("detect returns text findings from stderr for a primary rule", async () => {
+  const root = workspace()
+  try {
+    writeFileSync(join(root, "bad.css"), ".brand { font-family: Inter; }\n")
+    const plugin = await createPlugin(root)
+    const output = await plugin.tool.impeccable_detect.execute({ targets: ["bad.css"] }, {})
+    assert.match(output, /overused-font/)
+    assert.match(output, /font-family: Inter/)
+  } finally {
+    rmSync(root, { recursive: true, force: true })
+  }
+})
+
+test("detect resolves clean targets and rejects true launch failures", async () => {
+  const root = workspace()
+  try {
+    writeFileSync(join(root, "clean.css"), ".clean { color: #333; }\n")
+    const plugin = await createPlugin(root)
+    const clean = await plugin.tool.impeccable_detect.execute({ targets: ["clean.css"], jsonOutput: true }, {})
+    assert.deepEqual(JSON.parse(clean), [])
+    const broken = await createPlugin(root, undefined, { nodePath: "/nonexistent/node" })
+    await assert.rejects(
+      broken.tool.impeccable_detect.execute({ targets: ["clean.css"] }, {}),
+      /Unable to launch|ENOENT/,
+    )
   } finally {
     rmSync(root, { recursive: true, force: true })
   }

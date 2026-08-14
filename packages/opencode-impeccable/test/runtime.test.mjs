@@ -1,6 +1,6 @@
 import test from "node:test"
 import assert from "node:assert/strict"
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs"
+import { mkdirSync, mkdtempSync, realpathSync, rmSync, writeFileSync } from "node:fs"
 import { join } from "node:path"
 import { tmpdir } from "node:os"
 
@@ -36,7 +36,7 @@ test("runtime captures stdout and preserves the requested cwd", async () => {
   try {
     writeFileSync(join(runtime.scriptsDirAbs, "ok.mjs"), "console.log(JSON.stringify({ cwd: process.cwd() }))")
     const result = await runRuntimeScript(runtime, "ok.mjs")
-    assert.equal(JSON.parse(result.stdout).cwd, root)
+    assert.equal(JSON.parse(result.stdout).cwd, realpathSync(root))
   } finally {
     rmSync(root, { recursive: true, force: true })
   }
