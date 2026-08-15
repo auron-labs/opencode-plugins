@@ -8,7 +8,7 @@ import {
   writeFileSync,
 } from "node:fs"
 import { basename, dirname, isAbsolute, join, relative, resolve } from "node:path"
-import { tool } from "@opencode-ai/plugin"
+import { tool, type ToolDefinition } from "@opencode-ai/plugin"
 import { COMMANDS, describeCommand } from "./commands.js"
 import {
   runImpeccableCli,
@@ -21,7 +21,7 @@ const z = tool.schema
 const PIN_MARKER = "<!-- opencode-impeccable-pinned-command -->"
 const VALID_COMMANDS = new Set(COMMANDS.map((command) => command.name))
 
-export function buildTools(runtime: ImpeccableRuntime) {
+export function buildTools(runtime: ImpeccableRuntime): Record<string, ToolDefinition> {
   return {
     impeccable_reference: referenceTool(runtime),
     impeccable_context: contextTool(runtime),

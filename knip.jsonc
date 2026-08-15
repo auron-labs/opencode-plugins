@@ -1,0 +1,54 @@
+{
+  "$schema": "https://unpkg.com/knip@6/schema-jsonc.json",
+  // Exports used only inside their own file (e.g. helpers backing internal
+  // defaults) are not dead code; report them only once truly unused.
+  "ignoreExportsUsedInFile": true,
+  "workspaces": {
+    ".": {
+      "entry": ["scripts/*.ts", "scripts/*.mjs"],
+      "project": ["scripts/**"],
+      // The smoke script shells out to an `opencode` binary on PATH, not a dep.
+      "ignoreBinaries": ["opencode"]
+    },
+    "packages/opencode-codebase-memory": {
+      "project": ["src/**", "test/**"],
+      // zod reaches dist/index.d.ts only as a transitive type artifact of
+      // @opencode-ai/plugin; it is not a direct dependency of this package.
+      "ignoreDependencies": ["zod"]
+    },
+    "packages/opencode-impeccable": {
+      "project": ["src/**", "test/**", "scripts/**"],
+      // Runtime deps of the vendored upstream CLI (vendor/impeccable), which is
+      // executed by path string and invisible to static analysis.
+      "ignoreDependencies": ["css-select", "css-tree", "domutils", "fflate", "htmlparser2", "marked", "zod"],
+      "ignoreIssues": {
+        "src/commands.ts": ["exports"],
+        "src/logger.ts": ["exports"],
+        "src/tools.ts": ["exports"]
+      }
+    },
+    "packages/opencode-improve": {
+      "project": ["src/**", "test/**"]
+    },
+    "packages/opencode-omniroute-auth": {
+      "project": ["src/**", "test/**"],
+      // Dev-only type-compat scratch check; not part of tsconfig, build, or tests.
+      "ignore": ["type-compat-test.ts"],
+      "ignoreIssues": {
+        "src/plugin.ts": ["exports", "duplicates"],
+        "src/types.ts": ["types"],
+        "src/models.ts": ["exports"],
+        "src/models-dev.ts": ["exports", "types"],
+        "src/omniroute-combos.ts": ["exports", "types"]
+      }
+    },
+    "packages/opencode-worktrunk": {
+      "project": ["src/**", "test/**"],
+      "ignoreDependencies": ["zod"]
+    },
+    "packages/opencode-zellij": {
+      "project": ["src/**", "test/**"],
+      "ignoreDependencies": ["zod"]
+    }
+  }
+}

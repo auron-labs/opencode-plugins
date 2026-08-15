@@ -1,6 +1,7 @@
 import { readFile } from "node:fs/promises"
 import { dirname, join } from "node:path"
 import { fileURLToPath } from "node:url"
+import type { Hooks } from "@opencode-ai/plugin"
 import { COMMANDS, describeCommand, type ImperfectableCommand } from "./commands.js"
 import { warn } from "./logger.js"
 import { defaultRuntimePaths, runHookScript, type ImpeccableRuntime } from "./runtime.js"
@@ -130,7 +131,7 @@ function buildMenuCommand(): Record<string, unknown> {
 export const ImperfectablePlugin = async (
   { client, directory, worktree }: PluginContext,
   options?: ImperfectablePluginOptions,
-) => {
+): Promise<Hooks> => {
   const packageRoot = dirname(dirname(fileURLToPath(import.meta.url)))
   const paths = defaultRuntimePaths(packageRoot)
   const runtime: ImpeccableRuntime = {
