@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.4.0](https://github.com/auron-labs/opencode-plugins/compare/@auron-labs/opencode-impeccable-v0.3.0...@auron-labs/opencode-impeccable-v0.4.0) (2026-08-15)
+
+
+### Features
+
+* improve impeccable integration ([3530c76](https://github.com/auron-labs/opencode-plugins/commit/3530c76892dcd0aa618ac2a73e1f66eaeab0d5c6))
+* update impeccable vendor ([989c61b](https://github.com/auron-labs/opencode-plugins/commit/989c61ba191b16d8041982eaf7ead5949e91c3dc))
+
+
+### Bug Fixes
+
+* ts errors due to zod ([303c27a](https://github.com/auron-labs/opencode-plugins/commit/303c27a22f92e58cc0115f047665c470bbeb51f2))
+
 ## [0.3.0](https://github.com/auron-labs/opencode-plugins/compare/@auron-labs/opencode-impeccable-v0.2.0...@auron-labs/opencode-impeccable-v0.3.0) (2026-08-04)
 
 
