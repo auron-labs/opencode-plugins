@@ -1,59 +1,20 @@
-# @auron-labs/opencode-codebase-memory
-
-OpenCode plugin for `codebase-memory-mcp` that wires the MCP server into OpenCode and proactively indexes the active OpenCode project directory.
-
-## Install
-
-```bash
-opencode plugin @auron-labs/opencode-codebase-memory [--global]
-```
-
-## Requirements
-
-- OpenCode installed and loading plugins from your config.
-- `codebase-memory-mcp` installed and on `PATH`, or pass a custom `binary` option.
-
-## Usage
-
-Add to your OpenCode config:
-
-```json
-{
-  "plugin": [
-    ["@auron-labs/opencode-codebase-memory", {}]
-  ]
-}
-```
-
-With options:
-
-```json
-{
-  "plugin": [
-    ["@auron-labs/opencode-codebase-memory", {
-      "binary": "/Users/me/.local/bin/codebase-memory-mcp",
-      "indexMode": "fast",
-      "autoIndexLimit": 25000,
-      "indexOnStartup": true,
-      "autoIndex": false,
-      "enabled": true
-    }]
-  ]
-}
-```
 
 Restart OpenCode after changing plugin config.
 
 ## What it does
 
-- Adds an OpenCode MCP config entry for `codebase-memory-mcp`.
-- Sets the MCP server process CWD to the resolved project root.
-- Disables upstream `auto_index` config by default so the MCP server cannot index an unsafe process CWD.
+- Adds an OpenCode MCP config entry for `codebase-memory-mcp` only after the resolved root passes the safety policy.
+- Sets the MCP server process CWD to the canonical resolved project root.
+- Refuses unsafe roots before any codebase-memory helper process starts. Unsafe includes filesystem/drive roots, home and broad/system trees, credential paths, invalid or non-directory paths, markerless directories, symlink escapes, and roots outside an invalid or configured `CBM_ALLOWED_ROOT`.
+- Leaves MCP config untouched and exposes only skipped project/index tools for unsafe roots. It does not run `config set`, `list_projects`, `hook-augment`, or `index_repository` there.
+- Does not write upstream global `auto_index` by default. `autoIndex: true` is an explicit opt-in and writes its global settings once during safe plugin initialization; refreshes and tools do not write them.
 - Resolves the active OpenCode directory to its Git root or nearest project marker root.
 - Checks whether the resolved project root is already indexed.
 - If not, runs `codebase-memory-mcp cli index_repository ...` in the background.
-- Refuses to auto-index filesystem roots, home directories, and directories without project root markers.
+- Refuses to enable or auto-index filesystem roots, home directories, broad/system trees, credential paths, and directories without project root markers.
 - Uses a per-project lock so overlapping OpenCode processes do not start duplicate indexes.
+- Adds hidden read-only `codebase-memory-scout`, `codebase-memory`, and `codebase-memory-auditor` subagents on safe roots without replacing same-name user agents.
+- Augments safe-root `grep` and `glob` results with best-effort graph context through the bounded `hook-augment` helper; hook failures are ignored.
 
 The actual graph tools still come from the upstream MCP server after restart.
 
@@ -62,8 +23,8 @@ The actual graph tools still come from the upstream MCP server after restart.
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
 | `binary` | string | `codebase-memory-mcp` | Path to the upstream CLI binary |
-| `autoIndex` | boolean | `false` | Best-effort `config set auto_index <value>` on startup. Keep disabled unless you trust the MCP server process CWD. |
-| `autoIndexLimit` | number | unset | Best-effort `config set auto_index_limit <N>` on startup |
+| `autoIndex` | boolean | `false` | Explicit opt-in for one safe-initialization write of upstream global `config set auto_index true`. |
+| `autoIndexLimit` | number | unset | With `autoIndex: true`, also write upstream global `auto_index_limit` once during safe initialization. Otherwise ignored. |
 | `indexOnStartup` | boolean | `true` | Check and index the active OpenCode directory in the background |
 | `indexMode` | `full` \| `moderate` \| `fast` | `full` | Index mode for startup indexing |
 | `enabled` | boolean | `true` | Disable the plugin without removing it from config |
@@ -118,5 +79,5 @@ Arguments:
 ## Notes
 
 - This plugin works around upstream auto-index relying on the MCP server process CWD.
-- Startup indexing is skipped when OpenCode resolves to `/`, your home directory, a non-directory path, or a directory without a project marker.
+- Unsafe roots start with no MCP server or helper process. This includes `/`, your home directory, broad/system or credential trees, non-directories, markerless directories, symlink escapes, invalid `CBM_ALLOWED_ROOT`, and roots outside `CBM_ALLOWED_ROOT`.
 - It does not wrap all `codebase-memory-mcp` tools; use the upstream MCP tools directly once the server is connected.

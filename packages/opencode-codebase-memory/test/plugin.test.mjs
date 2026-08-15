@@ -1,165 +1,81 @@
-import test from 'node:test'
-import assert from 'node:assert/strict'
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
-import { homedir, tmpdir } from 'node:os'
-import { join } from 'node:path'
+      assert.equal(config.agent[name].permission.grep, 'allow')
+      assert.equal(config.agent[name].permission.glob, 'allow')
+    }
+    assert.equal(config.agent['codebase-memory'].description, 'user agent')
+    assert.equal(config.agent['codebase-memory-scout'].permission['codebase-memory-mcp_search_graph'], 'allow')
+    assert.equal(config.agent['codebase-memory-scout'].permission['codebase-memory-mcp_query_graph'], undefined)
 
-import pluginModule, { CodebaseMemoryPlugin } from '../dist/index.js'
-
-test('plugin exports default module metadata', () => {
-  assert.equal(pluginModule.id, 'opencode-codebase-memory')
-  assert.equal(pluginModule.server, CodebaseMemoryPlugin)
-})
-
-test('disabled plugin does not inject MCP config', async () => {
-  const plugin = await CodebaseMemoryPlugin({ directory: process.cwd() }, { enabled: false })
-  const config = {}
-
-  await plugin.config(config)
-
-  assert.deepEqual(config, {})
-  assert.ok(plugin.tool.codebase_memory_project)
-  assert.ok(plugin.tool.codebase_memory_index_project)
-})
-
-test('enabled plugin injects MCP config without startup indexing', async () => {
-  const directory = mkdtempSync(join(tmpdir(), 'opencode-codebase-memory-test-'))
-
-  try {
-    mkdirSync(join(directory, '.git'))
-    const plugin = await CodebaseMemoryPlugin(
-      { directory },
-      { enabled: true, indexOnStartup: false, binary: 'codebase-memory-mcp-custom' },
-    )
-    const config = {}
-
-    await plugin.config(config)
-
-    assert.deepEqual(config, {
-      mcp: {
-        'codebase-memory-mcp': {
-          type: 'local',
-          command: ['codebase-memory-mcp-custom'],
-          cwd: directory,
-          enabled: true,
-        },
-      },
-    })
+    const generated = {}
+    await plugin.config(generated)
+    assert.equal(generated.agent['codebase-memory'].permission['codebase-memory-mcp_query_graph'], 'allow')
+    assert.equal(generated.agent['codebase-memory-auditor'].permission['codebase-memory-mcp_detect_changes'], 'allow')
   } finally {
     rmSync(directory, { recursive: true, force: true })
   }
 })
 
-test('enabled plugin passes the resolved project root as the MCP cwd', async () => {
-  const directory = mkdtempSync(join(tmpdir(), 'opencode-codebase-memory-test-'))
-  const nested = join(directory, 'packages', 'demo')
+test('index process failures are terminal once and refresh failures remain failed', async () => {
+  const cases = [
+    { mode: 'nonzero', expected: /index failed|exit 7/ },
+    { mode: 'refresh-fail', expected: /Command failed|status refresh failed/ },
+  ]
 
-  try {
-    mkdirSync(nested, { recursive: true })
-    writeFileSync(join(directory, 'package.json'), '{}')
-
-    const plugin = await CodebaseMemoryPlugin(
-      { directory: nested },
-      { enabled: true, indexOnStartup: false, binary: 'codebase-memory-mcp-custom' },
-    )
-    const config = {}
-
-    await plugin.config(config)
-
-    assert.equal(config.mcp['codebase-memory-mcp'].cwd, directory)
-  } finally {
-    rmSync(directory, { recursive: true, force: true })
+  for (const { mode, expected } of cases) {
+    const directory = makeProject()
+    const logPath = join(directory, 'process.log')
+    writeScript(directory, 'cli', cliScript())
+    writeScript(directory, 'config', cliScript())
+    const toasts = []
+    try {
+      await withEnv('CBM_TEST_LOG', logPath, async () => {
+        await withEnv('CBM_CLI_MODE', mode, async () => {
+          const plugin = await CodebaseMemoryPlugin(
+            { directory, client: clientWithToasts(toasts) },
+            { enabled: true, binary: process.execPath, indexOnStartup: false },
+          )
+          await plugin.tool.codebase_memory_index_project.execute({ force: true })
+          const state = await waitFor(
+            () => plugin.tool.codebase_memory_project.execute({}),
+            (value) => JSON.parse(value).status === 'failed',
+          )
+          const parsed = JSON.parse(state)
+          assert.equal(parsed.status, 'failed')
+          assert.equal(parsed.lock, undefined)
+          assert.match(parsed.error, expected)
+          assert.equal(toasts.filter((toast) => toast.variant === 'error').length, 1)
+          const invocations = entries(logPath)
+          assert.equal(invocations.filter((entry) => entry.args?.includes('index_repository')).length, 1)
+          assert.equal(invocations.filter((entry) => entry.args?.includes('list_projects')).length, mode === 'refresh-fail' ? 1 : 0)
+          const before = invocations.length
+          await plugin.tool.codebase_memory_project.execute({})
+          await plugin.tool.codebase_memory_project.execute({})
+          assert.equal(entries(logPath).length, before)
+        })
+      })
+    } finally {
+      rmSync(directory, { recursive: true, force: true })
+    }
   }
 })
 
-test('disabled plugin reports idle project state without starting indexing', async () => {
-  const directory = mkdtempSync(join(tmpdir(), 'opencode-codebase-memory-test-'))
+test('spawn error followed by close produces one terminal error', async () => {
+  const directory = makeProject()
+  const toasts = []
 
   try {
     const plugin = await CodebaseMemoryPlugin(
-      { directory },
-      { enabled: false, binary: 'definitely-missing-codebase-memory-mcp' },
+      { directory, client: clientWithToasts(toasts) },
+      { enabled: true, binary: directory, indexOnStartup: false },
     )
-
-    const state = JSON.parse(await plugin.tool.codebase_memory_project.execute({}))
-
-    assert.deepEqual(state, {
-      rootPath: directory,
-      project: null,
-      indexed: false,
-      status: 'idle',
-    })
-  } finally {
-    rmSync(directory, { recursive: true, force: true })
-  }
-})
-
-test('enabled plugin skips filesystem root indexing', async () => {
-  const plugin = await CodebaseMemoryPlugin(
-    { directory: '/' },
-    { enabled: true, binary: 'definitely-missing-codebase-memory-mcp' },
-  )
-
-  const state = JSON.parse(await plugin.tool.codebase_memory_project.execute({}))
-
-  assert.equal(state.rootPath, '/')
-  assert.equal(state.indexed, false)
-  assert.equal(state.status, 'skipped')
-  assert.match(state.error, /filesystem root/)
-})
-
-test('enabled plugin skips home directory indexing', async () => {
-  const plugin = await CodebaseMemoryPlugin(
-    { directory: homedir() },
-    { enabled: true, binary: 'definitely-missing-codebase-memory-mcp' },
-  )
-
-  const state = JSON.parse(await plugin.tool.codebase_memory_project.execute({}))
-
-  assert.equal(state.rootPath, homedir())
-  assert.equal(state.indexed, false)
-  assert.equal(state.status, 'skipped')
-  assert.match(state.error, /home directory/)
-})
-
-test('enabled plugin resolves nested directory to nearest project marker root', async () => {
-  const directory = mkdtempSync(join(tmpdir(), 'opencode-codebase-memory-test-'))
-  const nested = join(directory, 'packages', 'demo')
-
-  try {
-    mkdirSync(nested, { recursive: true })
-    writeFileSync(join(directory, 'package.json'), '{}')
-
-    const plugin = await CodebaseMemoryPlugin(
-      { directory: nested },
-      { enabled: true, indexOnStartup: false, binary: 'definitely-missing-codebase-memory-mcp' },
+    await plugin.tool.codebase_memory_index_project.execute({ force: true })
+    const state = await waitFor(
+      () => plugin.tool.codebase_memory_project.execute({}),
+      (value) => JSON.parse(value).status === 'failed',
     )
-
-    const state = JSON.parse(await plugin.tool.codebase_memory_project.execute({}))
-
-    assert.equal(state.rootPath, directory)
-    assert.equal(state.indexed, false)
-    assert.equal(state.status, 'idle')
-  } finally {
-    rmSync(directory, { recursive: true, force: true })
-  }
-})
-
-test('enabled plugin skips directories without project markers', async () => {
-  const directory = mkdtempSync(join(tmpdir(), 'opencode-codebase-memory-test-'))
-
-  try {
-    const plugin = await CodebaseMemoryPlugin(
-      { directory },
-      { enabled: true, indexOnStartup: false, binary: 'definitely-missing-codebase-memory-mcp' },
-    )
-
-    const state = JSON.parse(await plugin.tool.codebase_memory_project.execute({}))
-
-    assert.equal(state.rootPath, directory)
-    assert.equal(state.indexed, false)
-    assert.equal(state.status, 'skipped')
-    assert.match(state.error, /project root marker/)
+    assert.equal(JSON.parse(state).lock, undefined)
+    assert.equal(toasts.filter((toast) => toast.variant === 'error').length, 1)
+    await plugin.tool.codebase_memory_project.execute({})
+    assert.equal(toasts.filter((toast) => toast.variant === 'error').length, 1)
   } finally {
     rmSync(directory, { recursive: true, force: true })
   }
