@@ -13,6 +13,12 @@
     "readme": "bun run scripts/update-readme.ts",
     "sync:improve": "bun run scripts/sync-improve-upstream.ts",
     "sync:improve:check": "bun run scripts/sync-improve-upstream.ts check",
-    "smoke:plugin": "node scripts/opencode-smoke.mjs"
+    "smoke:plugin": "node scripts/opencode-smoke.mjs",
+    "knip": "knip"
+  },
+  "devDependencies": {
+    "@types/node": "^26.2.0",
+    "knip": "^6.32.2",
+    "typescript": "^7.0.2"
   }
 }
