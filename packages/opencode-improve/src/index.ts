@@ -47,8 +47,7 @@ export default { id, server: async (_context: PluginContext) => {
           agents.improve = {
             description:
               "Surveys a codebase and writes prioritized, self-contained implementation plans without editing source files.",
-            mode: "subagent",
-            hidden: true,
+            mode: "primary",
             prompt,
             permission: {
               edit: {
@@ -90,7 +89,6 @@ export default { id, server: async (_context: PluginContext) => {
             description:
               "Audit the codebase and write implementation plans. Args: quick|deep|security|perf|tests|bugs|branch|next|plan <desc>|review-plan <file>|execute <plan>|reconcile|help",
             agent: "improve",
-            subtask: true,
           }
         }
       },

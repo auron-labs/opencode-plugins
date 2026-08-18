@@ -1,7 +1,7 @@
 {
   "repository": "pbakaus/impeccable",
-  "commit": "7b646bafd60b9dd9828ce5c4c1a25691702c9e92",
-  "committedAt": "2026-08-14T23:15:40Z",
+  "commit": "f88b2837a7d7c3182e46307bbbb091a1ed547571",
+  "committedAt": "2026-08-17T21:32:57Z",
   "skillVersion": "4.1.1",
   "paths": {
     "skill": "skill/SKILL.src.md",

@@ -1,6 +1,6 @@
 # @auron-labs/opencode-improve
 
-OpenCode plugin that injects an `improve` subagent for auditing codebases and writing self-contained implementation plans.
+OpenCode plugin that injects an `improve` agent for auditing codebases and writing self-contained implementation plans.
 
 The idea: use your most capable model for the part where intelligence compounds — understanding the codebase, judging what's worth doing, writing the spec — and hand execution to cheaper models. The plugin never implements anything itself. The plan is the product.
 
@@ -34,7 +34,7 @@ Add to your OpenCode config:
 
 Restart OpenCode. The plugin adds:
 
-- An `improve` subagent (hidden, invoked via `/improve`)
+- An `improve` agent (invoked via `/improve` or selected from the agent picker)
 - A `/improve` slash command
 
 ## What `/improve` does
@@ -72,6 +72,6 @@ The `execute <plan>` variant dispatches a subagent to implement a plan in an iso
 
 ## Notes
 
-- The `improve` agent is a subagent — it doesn't appear in the agent picker. Invoke it via `/improve`.
+- The `improve` agent is a primary agent — you can select it in the agent picker or invoke it via `/improve`.
 - The upstream `shadcn/improve` skill markdown is bundled in the package and read at runtime, along with the reference files it points to.
 - Refresh the bundled files from upstream with `bun run sync:improve` at the repo root, or run `bun run sync:improve:check` to fail CI when local copies drift. The script discovers `SKILL.md` and `references/*.md` from `shadcn/improve@main:skills/improve/` (via the GitHub tree API) and writes them flat into this package's `references/` directory, so renames and additions are picked up automatically. Local `.md` files in `references/` that no longer exist upstream are removed on sync and reported as failures by `check`.

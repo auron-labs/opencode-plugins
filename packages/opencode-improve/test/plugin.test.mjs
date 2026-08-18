@@ -11,8 +11,8 @@ test('plugin injects improve agent and command', async () => {
 
   assert.equal(pluginModule.id, 'opencode-improve')
   assert.ok(config.agent.improve)
-  assert.equal(config.agent.improve.hidden, true)
-  assert.equal(config.agent.improve.mode, 'subagent')
+  assert.equal(config.agent.improve.hidden, undefined)
+  assert.equal(config.agent.improve.mode, 'primary')
   assert.equal(config.agent.improve.permission.edit['plans/**'], 'allow')
   assert.equal(config.agent.improve.permission.edit['**'], 'deny')
 
@@ -29,7 +29,7 @@ test('plugin injects improve agent and command', async () => {
 
   assert.ok(config.command.improve)
   assert.equal(config.command.improve.agent, 'improve')
-  assert.equal(config.command.improve.subtask, true)
+  assert.equal(config.command.improve.subtask, undefined)
   assert.equal(typeof config.command.improve.description, 'string')
   assert.ok(config.command.improve.description.includes('help'))
   assert.ok(config.command.improve.template.includes('$ARGUMENTS'))
