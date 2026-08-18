@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.5.0](https://github.com/auron-labs/opencode-plugins/compare/@auron-labs/opencode-improve-v0.4.0...@auron-labs/opencode-improve-v0.5.0) (2026-08-18)
+
+
+### Features
+
+* remove sub-agent from improve, update impeccable ([ff9608c](https://github.com/auron-labs/opencode-plugins/commit/ff9608cd065e9024d8720e44fe696902e83c2159))
+
 ## [0.4.0](https://github.com/auron-labs/opencode-plugins/compare/@auron-labs/opencode-improve-v0.3.0...@auron-labs/opencode-improve-v0.4.0) (2026-08-03)
 
 
