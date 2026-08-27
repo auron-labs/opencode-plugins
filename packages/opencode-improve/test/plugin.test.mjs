@@ -32,8 +32,87 @@ test('plugin injects improve agent and command', async () => {
   assert.equal(config.command.improve.subtask, undefined)
   assert.equal(typeof config.command.improve.description, 'string')
   assert.ok(config.command.improve.description.includes('help'))
-  assert.ok(config.command.improve.template.includes('$ARGUMENTS'))
-  assert.ok(config.command.improve.template.includes('help'))
+  // OpenCode's command config has no argHints field; autocomplete guidance belongs in the description/template.
+  assert.equal(Object.hasOwn(config.command.improve, 'argHints'), false)
+  assert.equal(config.command.improve.template, 'Improve request: $ARGUMENTS')
+})
+
+test('/improve command hook routes variants and composes modifiers', async () => {
+  const plugin = await pluginModule.server({ directory: process.cwd() })
+  const config = {}
+
+  await plugin.config(config)
+
+  const before = plugin['command.execute.before']
+  const run = async (argumentsText) => {
+    const part = { type: 'text', text: 'original prompt' }
+    await before({ command: 'improve', sessionID: 'session-1', arguments: argumentsText }, { parts: [part] })
+    return part.text
+  }
+
+  const routes = [
+    ['', 'Route: bare audit.'],
+    ['quick', 'Route: bare audit.'],
+    ['plan add caching', 'Route: plan.'],
+    ['review-plan plans/cache.md', 'Route: review-plan.'],
+    ['execute plans/cache.md', 'Route: execute.'],
+    ['reconcile', 'Route: reconcile.'],
+    ['branch deep', 'Route: branch audit.'],
+    ['features', 'Route: direction audit.'],
+    ['next', 'Route: direction audit.'],
+    ['roadmap quick', 'Route: direction audit.'],
+    ['security', 'Route: focused audit (security).'],
+    ['not-a-command --issues', 'Route: plan (free-form request).'],
+  ]
+  const prompts = []
+  for (const [argumentsText, route] of routes) {
+    const prompt = await run(argumentsText)
+    prompts.push(prompt)
+    assert.ok(prompt.startsWith(route), `expected ${route} for ${argumentsText}`)
+    assert.ok(prompt.includes(`Invocation arguments: ${argumentsText}`))
+  }
+  assert.equal(new Set(prompts).size, prompts.length)
+
+  const composed = await run('deep security --issues')
+  assert.ok(composed.startsWith('Route: focused audit (security).'))
+  assert.ok(composed.includes('Effort modifier: deep'))
+  assert.ok(composed.includes('Explicit --issues modifier'))
+})
+
+test('/improve command hook gives help precedence and preserves unrelated parts', async () => {
+  const plugin = await pluginModule.server({ directory: process.cwd() })
+  await plugin.config({})
+  const before = plugin['command.execute.before']
+  const metadata = { id: 'part-1', metadata: { source: 'test' } }
+  const part = { type: 'text', text: 'original prompt', ...metadata }
+  const output = { parts: [part] }
+
+  await before(
+    { command: 'improve', sessionID: 'session-1', arguments: 'plan ship it --help' },
+    output,
+  )
+
+  assert.equal(output.parts[0], part)
+  assert.equal(part.id, 'part-1')
+  assert.deepEqual(part.metadata, { source: 'test' })
+  assert.ok(part.text.startsWith('Route: help.'))
+  assert.ok(part.text.includes('Do not audit, inspect the repository, write plans, dispatch, or publish issues.'))
+
+  const noTextOutput = { parts: [{ type: 'tool', id: 'tool-1' }] }
+  await before(
+    { command: 'improve', sessionID: 'session-1', arguments: '' },
+    noTextOutput,
+  )
+  assert.deepEqual(noTextOutput.parts, [{ type: 'tool', id: 'tool-1' }])
+
+  const unrelatedPart = { type: 'text', text: 'leave this alone', id: 'other' }
+  const unrelatedOutput = { parts: [unrelatedPart] }
+  await before(
+    { command: 'other', sessionID: 'session-1', arguments: 'security' },
+    unrelatedOutput,
+  )
+  assert.equal(unrelatedOutput.parts[0], unrelatedPart)
+  assert.equal(unrelatedPart.text, 'leave this alone')
 })
 
 test('plugin preserves existing improve entries', async () => {
@@ -47,4 +126,11 @@ test('plugin preserves existing improve entries', async () => {
 
   assert.equal(config.agent.improve.description, 'existing')
   assert.equal(config.command.improve.description, 'existing command')
+
+  const part = { type: 'text', text: 'custom command prompt', id: 'custom' }
+  await plugin['command.execute.before'](
+    { command: 'improve', sessionID: 'session-1', arguments: 'security' },
+    { parts: [part] },
+  )
+  assert.equal(part.text, 'custom command prompt')
 })

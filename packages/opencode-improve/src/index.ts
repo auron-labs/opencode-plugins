@@ -10,7 +10,37 @@ type PluginContext = {
   directory: string
 }
 
+type CommandExecuteBeforeInput = {
+  command: string
+  sessionID: string
+  arguments: string
+}
+
+type CommandPart = {
+  type?: string
+  text?: string
+  [key: string]: unknown
+}
+
+type CommandExecuteBeforeOutput = {
+  parts: CommandPart[]
+}
+
 const frontmatterPattern = /^---\n[\s\S]*?\n---\n\n/
+const invocationModifiers = new Set(["quick", "deep", "--issues"])
+const focusCategories = new Set([
+  "correctness",
+  "security",
+  "performance",
+  "perf",
+  "tests",
+  "bugs",
+  "tech-debt",
+  "dependencies",
+  "dx",
+  "docs",
+  "direction",
+])
 
 function rewritePromptReferences(prompt: string, refsDir: string): string {
   return prompt
@@ -26,7 +56,78 @@ async function buildPrompt(refsDir: string): Promise<string> {
   return rewritePromptReferences(prompt.replace(frontmatterPattern, ""), refsDir)
 }
 
+function invocationTokens(argumentsText: string): string[] {
+  const trimmed = argumentsText.trim()
+  return trimmed ? trimmed.split(/\s+/) : []
+}
+
+function buildImproveRoutePrompt(argumentsText: string): string {
+  const tokens = invocationTokens(argumentsText)
+  if (tokens.includes("help") || tokens.includes("--help")) {
+    return [
+      "Route: help.",
+      "Print the /improve usage from the bundled improve skill's \"Invocation variants\" section.",
+      "Do not audit, inspect the repository, write plans, dispatch, or publish issues.",
+      `Invocation arguments: ${argumentsText}`,
+    ].join("\n")
+  }
+
+  const effort = tokens.find((token) => token === "quick" || token === "deep")
+  const primary = tokens.find((token) => !invocationModifiers.has(token))
+  let route: string
+
+  switch (primary) {
+    case undefined:
+      route = "bare audit"
+      break
+    case "plan":
+      route = "plan"
+      break
+    case "review-plan":
+      route = "review-plan"
+      break
+    case "execute":
+      route = "execute"
+      break
+    case "reconcile":
+      route = "reconcile"
+      break
+    case "branch":
+      route = "branch audit"
+      break
+    case "next":
+    case "features":
+    case "roadmap":
+      route = "direction audit"
+      break
+    default:
+      route = focusCategories.has(primary) ? `focused audit (${primary})` : "plan (free-form request)"
+  }
+
+  const prompt = [
+    `Route: ${route}.`,
+    "Use the bundled improve skill for the selected workflow details; do not choose a different route.",
+    effort ? `Effort modifier: ${effort}; apply it to the selected audit route.` : undefined,
+    tokens.includes("--issues")
+      ? "Explicit --issues modifier: publish plans as GitHub issues only after following the skill's safety checks."
+      : undefined,
+    route === "plan (free-form request)"
+      ? "Route unknown/free-form input to plan <description>; treat non-modifier text as the description for one plan."
+      : undefined,
+    `Invocation arguments: ${argumentsText}`,
+  ]
+
+  return prompt.filter((line): line is string => line !== undefined).join("\n")
+}
+
+function replaceCommandTextPart(parts: CommandPart[], prompt: string): void {
+  const textPart = parts.find((part) => part.type === "text" && typeof part.text === "string")
+  if (textPart) textPart.text = prompt
+}
+
 export default { id, server: async (_context: PluginContext) => {
+    let ownsImproveCommand = false
+
     return {
       // ponytail: config hook types intentionally loose — these exact keys exist on the runtime Config
       config: async (input: Record<string, unknown>) => {
@@ -68,29 +169,17 @@ export default { id, server: async (_context: PluginContext) => {
         const commands = (input.command ?? (input.command = {})) as Record<string, Record<string, unknown>>
         if (!commands.improve) {
           commands.improve = {
-            template: [
-              "Run the improve workflow from your instructions. Invocation arguments: $ARGUMENTS",
-              "If no arguments are provided, run the default full audit and planning flow.",
-              "If the argument is \"help\" or \"--help\", print this usage guide and do not audit:",
-              "",
-              "/improve                        full audit: recon → findings → prioritized plans",
-              "/improve quick                  cheap pass: hotspots, top findings only",
-              "/improve deep                   exhaustive: every package, every category",
-              "/improve security               focused audit (also: perf, tests, bugs)",
-              "/improve branch                 audit only what the current branch changes",
-              "/improve next                   feature suggestions — where to take the project",
-              "/improve plan <description>     skip the audit, spec one thing",
-              "/improve review-plan <file>     critique and tighten an existing plan",
-              "/improve execute <plan>         dispatch a subagent, review its work",
-              "/improve reconcile              refresh the backlog: verify, unblock, retire",
-              "/improve ... --issues           also publish plans as GitHub issues",
-              "/improve help                   show this message",
-            ].join("\n"),
+            template: "Improve request: $ARGUMENTS",
             description:
-              "Audit the codebase and write implementation plans. Args: quick|deep|security|perf|tests|bugs|branch|next|plan <desc>|review-plan <file>|execute <plan>|reconcile|help",
+              "Route audits and plans. Args: quick|deep|focus|branch|next|plan|review-plan|execute|reconcile|help [--issues]",
             agent: "improve",
           }
+          ownsImproveCommand = true
         }
+      },
+      "command.execute.before": async (input: CommandExecuteBeforeInput, output: CommandExecuteBeforeOutput) => {
+        if (!ownsImproveCommand || input.command !== "improve") return
+        replaceCommandTextPart(output.parts, buildImproveRoutePrompt(input.arguments))
       },
     }
   }}
