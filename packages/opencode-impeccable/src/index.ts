@@ -2,10 +2,10 @@ import { readFile } from "node:fs/promises"
 import { dirname, join } from "node:path"
 import { fileURLToPath } from "node:url"
 import type { Hooks } from "@opencode-ai/plugin"
-import { COMMANDS, describeCommand, type ImperfectableCommand } from "./commands.js"
+import { COMMANDS, describeCommand, MENU_REFERENCE, type ImperfectableCommand } from "./commands.js"
 import { warn } from "./logger.js"
 import { defaultRuntimePaths, runHookScript, type ImpeccableRuntime } from "./runtime.js"
-import { buildTools } from "./tools.js"
+import { buildTools, loadReferenceText } from "./tools.js"
 
 const id = "opencode-impeccable"
 const FRONTMATTER = /^---\n[\s\S]*?\n---\n\n/
@@ -58,6 +58,22 @@ export type Client = {
   }
 }
 
+type CommandExecuteBeforeInput = {
+  command: string
+  sessionID: string
+  arguments: string
+}
+
+type CommandPart = {
+  type?: string
+  text?: string
+  [key: string]: unknown
+}
+
+type CommandExecuteBeforeOutput = {
+  parts: CommandPart[]
+}
+
 const ADAPTER_PROMPT = `
 You are the Impeccable implementation agent inside the native OpenCode plugin.
 
@@ -93,20 +109,25 @@ async function loadAuxiliaryAgentPrompt(agentsDirAbs: string, file: string): Pro
   return `${adapter}\n\n${upstream}`
 }
 
-function buildCommandRecord(command: ImperfectableCommand): Record<string, unknown> {
+function buildCommandPrompt(command: ImperfectableCommand, referenceText: string, argumentsText: string): string {
   const lines = [
     `Run /impeccable ${command.name}.${command.deprecated ? " This command is deprecated; handle it as ordinary new-work." : ""}`,
-    `Load the ${command.reference.replace(/\.md$/, "")} playbook with impeccable_reference and follow it.`,
+    "Follow this bundled playbook, already adapted for OpenCode:",
+    referenceText,
   ]
   if (command.nativeReference) {
     lines.push(
       `For ios/android/adaptive projects, also load ${command.nativeReference.replace(/\.md$/, "")} with impeccable_reference.`,
     )
   }
-  lines.push("Invocation arguments: $ARGUMENTS")
+  lines.push(`Invocation arguments: ${argumentsText || "(none)"}`)
+  return lines.join("\n")
+}
+
+function buildCommandRecord(command: ImperfectableCommand, referenceText: string): Record<string, unknown> {
   return {
     description: describeCommand(command),
-    template: lines.join("\n"),
+    template: buildCommandPrompt(command, referenceText, "$ARGUMENTS"),
     agent: "impeccable",
     subtask: false,
   }
@@ -128,6 +149,48 @@ function buildMenuCommand(): Record<string, unknown> {
   }
 }
 
+function replaceCommandTextPart(parts: CommandPart[], prompt: string): void {
+  const textPart = parts.find((part) => part.type === "text" && typeof part.text === "string")
+  if (textPart) textPart.text = prompt
+}
+
+function splitCommandArguments(argumentsText: string): { command?: string; rest: string } {
+  const trimmed = argumentsText.trim()
+  if (!trimmed) return { rest: "" }
+  const separator = trimmed.search(/\s/)
+  if (separator === -1) return { command: trimmed, rest: "" }
+  return { command: trimmed.slice(0, separator), rest: trimmed.slice(separator).trim() }
+}
+
+function findCommand(name: string | undefined): ImperfectableCommand | undefined {
+  if (!name) return undefined
+  return COMMANDS.find((command) => command.name === name || command.aliases?.includes(name))
+}
+
+function buildMenuRoutePrompt(
+  argumentsText: string,
+  routingReference: string,
+  commandReferences: Map<string, string>,
+): string {
+  const invocation = splitCommandArguments(argumentsText)
+  const command = findCommand(invocation.command)
+  if (command) {
+    return buildCommandPrompt(command, commandReferences.get(command.name)!, invocation.rest)
+  }
+
+  const trimmedArguments = argumentsText.trim()
+  return [
+    "Dispatch this request through the Impeccable implementation agent.",
+    "Call impeccable_context once before presenting the menu.",
+    trimmedArguments
+      ? "This is an unrecognized or freeform request; do not guess a command. Use the routing playbook to choose a safe recommendation."
+      : "With no command selected, present the context-aware menu without auto-running a command.",
+    "Follow this bundled routing playbook, already adapted for OpenCode:",
+    routingReference,
+    `Invocation arguments: ${trimmedArguments || "(none)"}`,
+  ].join("\n")
+}
+
 export const ImperfectablePlugin = async (
   { client, directory, worktree }: PluginContext,
   options?: ImperfectablePluginOptions,
@@ -141,6 +204,9 @@ export const ImperfectablePlugin = async (
     nodePath: options?.nodePath?.trim() || process.env.IMPECCABLE_NODE?.trim() || "node",
   }
   const tools = buildTools(runtime)
+  const commandReferences = new Map<string, string>()
+  let routingReference = ""
+  let ownsMenuCommand = false
 
   const configHook = async (input: Record<string, unknown> = {}) => {
     const prompt = await loadSkillPrompt(runtime.refsDirAbs)
@@ -167,15 +233,27 @@ export const ImperfectablePlugin = async (
     const commands = (input.command ?? (input.command = {})) as Record<string, Record<string, unknown>>
     for (const command of COMMANDS) {
       const key = `impeccable-${command.name}`
-      if (!commands[key]) commands[key] = buildCommandRecord(command)
+      const referenceText = loadReferenceText(runtime.refsDirAbs, command.reference.replace(/\.md$/, ""))
+      commandReferences.set(command.name, referenceText)
+      if (!commands[key]) {
+        commands[key] = buildCommandRecord(command, referenceText)
+      }
     }
-    if (!commands.impeccable) commands.impeccable = buildMenuCommand()
+    if (!commands.impeccable) {
+      commands.impeccable = buildMenuCommand()
+      routingReference = loadReferenceText(runtime.refsDirAbs, MENU_REFERENCE.replace(/\.md$/, ""))
+      ownsMenuCommand = true
+    }
   }
 
   const hooks = buildHooks(runtime, client)
   return {
     config: configHook,
     tool: tools,
+    "command.execute.before": async (input: CommandExecuteBeforeInput, output: CommandExecuteBeforeOutput) => {
+      if (!ownsMenuCommand || input.command !== "impeccable") return
+      replaceCommandTextPart(output.parts, buildMenuRoutePrompt(input.arguments, routingReference, commandReferences))
+    },
     "tool.execute.after": hooks.after,
     event: hooks.event,
   }

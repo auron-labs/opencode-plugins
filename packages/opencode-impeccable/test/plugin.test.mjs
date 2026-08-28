@@ -101,8 +101,88 @@ test("commands use a capable hidden primary agent without overriding user permis
       assert.ok(entry, `missing impeccable-${command}`)
       assert.equal(entry.agent, "impeccable")
       assert.equal(entry.subtask, false)
-      assert.match(entry.template, /impeccable_reference/)
+      assert.match(entry.template, /Follow this bundled playbook, already adapted for OpenCode:/)
+      assert.match(entry.template, /Invocation arguments: \$ARGUMENTS/)
     }
+    assert.doesNotMatch(config.command["impeccable-shape"].template, /impeccable_reference/)
+    assert.match(config.command["impeccable-audit"].template, /load audit\.native with impeccable_reference/)
+  } finally {
+    rmSync(root, { recursive: true, force: true })
+  }
+})
+
+test("concrete command templates inject adapted reference content", async () => {
+  const root = workspace()
+  try {
+    const plugin = await createPlugin(root)
+    const config = {}
+    await plugin.config(config)
+
+    const template = config.command["impeccable-layout"].template
+    assert.match(template, /Layout turns product priority into reading order, grouping, rhythm, and usable space/)
+    assert.match(template, /impeccable_detect --json --scope layout/)
+    assert.doesNotMatch(template, /node \{\{scripts_path\}\}\/detect\.mjs/)
+    assert.doesNotMatch(template, /npx impeccable/)
+    assert.match(template, /Invocation arguments: \$ARGUMENTS/)
+  } finally {
+    rmSync(root, { recursive: true, force: true })
+  }
+})
+
+test("generic command hook injects the menu or selected adapted playbook", async () => {
+  const root = workspace()
+  try {
+    const plugin = await createPlugin(root)
+    await plugin.config({})
+    const before = plugin["command.execute.before"]
+
+    const run = async (argumentsText) => {
+      const part = { type: "text", text: "original prompt" }
+      await before(
+        { command: "impeccable", sessionID: "session-1", arguments: argumentsText },
+        { parts: [part] },
+      )
+      return part.text
+    }
+
+    const menu = await run("")
+    assert.match(menu, /Call impeccable_context once before presenting the menu/)
+    assert.match(menu, /# No-argument routing: the context-aware menu/)
+    assert.doesNotMatch(menu, /load routing with impeccable_reference/)
+
+    const known = await run("polish src")
+    assert.match(known, /Polish is refinement, never concealed redesign/)
+    assert.match(known, /Invocation arguments: src/)
+    assert.doesNotMatch(known, /Load the polish playbook with impeccable_reference/)
+
+    const alias = await run("teach docs/product.md")
+    assert.match(alias, /Run \/impeccable init\./)
+    assert.match(alias, /captures durable product truth in PRODUCT\.md/)
+    assert.match(alias, /Invocation arguments: docs\/product\.md/)
+
+    const freeform = await run("make a dashboard")
+    assert.match(freeform, /unrecognized or freeform request; do not guess a command/)
+    assert.match(freeform, /# No-argument routing: the context-aware menu/)
+    assert.match(freeform, /Invocation arguments: make a dashboard/)
+    assert.doesNotMatch(freeform, /Run \/impeccable make/)
+  } finally {
+    rmSync(root, { recursive: true, force: true })
+  }
+})
+
+test("generic command hook leaves a user-owned command untouched", async () => {
+  const root = workspace()
+  try {
+    const plugin = await createPlugin(root)
+    const config = { command: { impeccable: { template: "mine" } } }
+    await plugin.config(config)
+
+    const part = { type: "text", text: "user prompt" }
+    await plugin["command.execute.before"](
+      { command: "impeccable", sessionID: "session-1", arguments: "polish src" },
+      { parts: [part] },
+    )
+    assert.equal(part.text, "user prompt")
   } finally {
     rmSync(root, { recursive: true, force: true })
   }

@@ -75,9 +75,13 @@ function referenceTool(runtime: ImpeccableRuntime) {
       if (!available.has(name)) {
         throw new Error(`Unknown Impeccable reference: ${name}. Available: ${[...available].sort().join(", ")}`)
       }
-      return adaptReferenceText(readFileSync(join(runtime.refsDirAbs, `${name}.md`), "utf8"))
+      return loadReferenceText(runtime.refsDirAbs, name)
     },
   })
+}
+
+export function loadReferenceText(refsDirAbs: string, name: string): string {
+  return adaptReferenceText(readFileSync(join(refsDirAbs, `${name}.md`), "utf8"))
 }
 
 function contextTool(runtime: ImpeccableRuntime) {
