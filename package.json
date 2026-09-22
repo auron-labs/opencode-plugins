@@ -17,6 +17,7 @@
     "knip": "knip"
   },
   "devDependencies": {
+    "@opencode/plugin": "^2.0.3",
     "@types/node": "^26.2.0",
     "knip": "^6.32.2",
     "typescript": "^7.0.2"

@@ -35,9 +35,9 @@ bun add @auron-labs/opencode-codebase-memory
 
 ```json
 {
-  "plugin": [
-    ["@auron-labs/opencode-codebase-memory", {}],
-    ["@auron-labs/opencode-improve", {}]
+  "plugins": [
+    "@auron-labs/opencode-codebase-memory",
+    "@auron-labs/opencode-improve"
   ]
 }
 ```

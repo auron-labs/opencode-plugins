@@ -12,12 +12,11 @@ import {
 import { homedir, tmpdir } from "node:os"
 import path from "node:path"
 import { promisify } from "node:util"
-import { tool } from "@opencode-ai/plugin"
+import { Plugin } from "@opencode/plugin"
+import type { Result } from "@opencode/plugin/promise/tool"
 import { info, warn } from "./logger.js"
-// plugin format: { id, server } direct object export
 
 const execFileAsync = promisify(execFile)
-const z = tool.schema
 
 const id = "opencode-codebase-memory"
 
@@ -28,22 +27,6 @@ type PluginOptions = {
   indexOnStartup?: boolean
   indexMode?: "full" | "moderate" | "fast"
   enabled?: boolean
-}
-
-type PluginContext = {
-  client?: Client
-  directory: string
-}
-
-type Client = {
-  tui?: {
-    showToast(args: { body: { message: string; variant: string } }): Promise<void>
-  }
-}
-
-type ConfigShape = {
-  mcp?: Record<string, unknown>
-  agent?: Record<string, Record<string, unknown>>
 }
 
 type ProjectRecord = {
@@ -473,12 +456,6 @@ function cleanupActiveIndexes() {
   activeIndexes.clear()
 }
 
-async function showToast(client: Client | undefined, message: string, variant: string) {
-  try {
-    await client?.tui?.showToast({ body: { message, variant } })
-  } catch {}
-}
-
 async function execCli(binary: string, directory: string, args: string[], timeout = 30_000) {
   return await execFileAsync(binary, args, {
     cwd: directory,
@@ -575,7 +552,6 @@ async function refreshProjectState(binary: string, directory: string): Promise<P
 function startBackgroundIndex(
   binary: string,
   policy: RootPolicy,
-  client: Client | undefined,
   options: Required<PluginOptions>,
 ): ProjectState {
   const directory = policy.rootPath
@@ -617,7 +593,6 @@ function startBackgroundIndex(
     directory,
     mode: options.indexMode,
   })
-  void showToast(client, `codebase-memory-mcp indexing ${path.basename(directory) || directory}`, "info")
 
   let child: ChildProcess | undefined
   try {
@@ -649,7 +624,6 @@ function startBackgroundIndex(
     current.error = message
     delete current.lock
     stateByRoot.set(directory, current)
-    void showToast(client, `codebase-memory-mcp index failed: ${message}`, "error")
     return current
   }
   if (!child) return state
@@ -671,7 +645,6 @@ function startBackgroundIndex(
     delete current.lock
     stateByRoot.set(directory, current)
     warn(event, "Background repository index failed", { directory, ...metadata, error: message })
-    await showToast(client, `codebase-memory-mcp index failed: ${message}`, "error")
   }
 
   child.stderr?.on("data", (chunk: Uint8Array | string) => {
@@ -693,7 +666,6 @@ function startBackgroundIndex(
       delete current.lock
       stateByRoot.set(directory, current)
       warn("index_failed", "Background repository index failed", { directory, code, error: message })
-      void showToast(client, `codebase-memory-mcp index failed: ${message}`, "error")
       return
     }
 
@@ -704,7 +676,6 @@ function startBackgroundIndex(
         delete refreshed.lock
         stateByRoot.set(directory, refreshed)
         if (refreshed.status === "failed") {
-          void showToast(client, `codebase-memory-mcp index failed: ${refreshed.error || "status refresh failed"}`, "error")
           return
         }
         refreshed.status = refreshed.indexed ? "ready" : "idle"
@@ -713,7 +684,6 @@ function startBackgroundIndex(
           directory,
           indexed: refreshed.indexed,
         })
-        void showToast(client, "codebase-memory-mcp index ready", "success")
       } finally {
         refreshing.delete(directory)
       }
@@ -726,7 +696,6 @@ function startBackgroundIndex(
 async function ensureProjectIndex(
   binary: string,
   policy: RootPolicy,
-  client: Client | undefined,
   options: Required<PluginOptions>,
 ) {
   const directory = policy.rootPath
@@ -743,7 +712,7 @@ async function ensureProjectIndex(
 
   const state = await refreshProjectState(binary, directory)
   if (!state.indexed && state.status === "idle") {
-    startBackgroundIndex(binary, policy, client, options)
+    startBackgroundIndex(binary, policy, options)
   }
 }
 
@@ -845,63 +814,82 @@ function runGraphAugmentation(binary: string, rootPath: string, toolName: "Grep"
 }
 
 function buildGraphAugmentationHook(binary: string, rootPath: string) {
-  return async (
-    input: { tool?: string; args?: unknown },
-    output?: { output?: string },
-  ) => {
-    const toolName = input.tool === "grep" ? "Grep" : input.tool === "glob" ? "Glob" : null
-    if (!toolName || !input.args || typeof input.args !== "object") return
-    const context = await runGraphAugmentation(binary, rootPath, toolName, input.args as object)
-    if (!context || !output) return
-    output.output = output.output ? `${output.output}\n${context}` : context
+  return async (event: {
+    tool: string
+    input: unknown
+    status: "completed" | "error"
+    result?: Result
+  }) => {
+    const toolName = event.tool === "grep" ? "Grep" : event.tool === "glob" ? "Glob" : null
+    if (event.status !== "completed" || !toolName || !event.input || typeof event.input !== "object" || !event.result) return
+    const context = await runGraphAugmentation(binary, rootPath, toolName, event.input as object)
+    if (!context) return
+
+    const result = event.result as { content?: string | Array<{ type: "text"; text: string } | { type: "file"; uri: string; mime: string; name?: string }> }
+    const content = result.content
+    if (typeof content === "string") {
+      result.content = `${content}\n${context}`
+    } else if (Array.isArray(content)) {
+      result.content = [...content, { type: "text", text: context }]
+    } else {
+      result.content = context
+    }
   }
 }
 
 function graphAgentConfig(name: keyof typeof graphAgentPrompts, tools: readonly string[]) {
-  const permission: Record<string, string> = {
-    "*": "deny",
-    read: "allow",
-    grep: "allow",
-    glob: "allow",
-  }
-  for (const toolName of tools) permission[`codebase-memory-mcp_${toolName}`] = "allow"
+  const permissions = [
+    { action: "*", resource: "*", effect: "deny" as const },
+    { action: "read", resource: "*", effect: "allow" as const },
+    { action: "grep", resource: "*", effect: "allow" as const },
+    { action: "glob", resource: "*", effect: "allow" as const },
+    ...tools.map((toolName) => ({ action: "tool", resource: `codebase-memory-mcp_${toolName}`, effect: "allow" as const })),
+  ]
   return {
     description: graphAgentPrompts[name],
     mode: "subagent",
     hidden: true,
-    prompt: graphAgentPrompts[name],
-    permission,
+    system: graphAgentPrompts[name],
+    permissions,
   }
 }
 
-function injectGraphAgents(input: ConfigShape) {
-  const agents = (input.agent ?? (input.agent = {})) as Record<string, Record<string, unknown>>
-  if (!agents["codebase-memory-scout"]) {
-    agents["codebase-memory-scout"] = graphAgentConfig("codebase-memory-scout", scoutGraphTools)
-  }
-  if (!agents["codebase-memory"]) {
-    agents["codebase-memory"] = graphAgentConfig("codebase-memory", verifiedGraphTools)
-  }
-  if (!agents["codebase-memory-auditor"]) {
-    agents["codebase-memory-auditor"] = graphAgentConfig("codebase-memory-auditor", verifiedGraphTools)
-  }
+const projectStateOutput = {
+  type: "object",
+  properties: {
+    rootPath: { type: "string" },
+    project: { type: ["string", "null"] },
+    indexed: { type: "boolean" },
+    status: { type: "string", enum: ["idle", "indexing", "ready", "failed", "skipped"] },
+    error: { type: "string" },
+    lock: {
+      type: "object",
+      properties: {
+        path: { type: "string" },
+        ownerPid: { type: "number" },
+        childPid: { type: "number" },
+        startedAt: { type: "number" },
+        active: { type: "boolean" },
+      },
+      required: ["path", "active"],
+    },
+  },
+  required: ["rootPath", "project", "indexed", "status"],
+} as const
+
+function projectStateResult(state: ProjectState) {
+  return { output: state, content: JSON.stringify(state, null, 2) }
 }
 
-const codebaseMemoryProject = (
+async function codebaseMemoryProject(
   binary: string,
   policy: RootPolicy,
-  client: Client | undefined,
   options: Required<PluginOptions>,
-) =>
-  tool({
-    description: "Report the current codebase-memory project state for the active OpenCode directory.",
-    args: {
-      refresh: z.boolean().optional().describe("Refresh project status from list_projects before returning"),
-    },
-    async execute(args: { refresh?: boolean }) {
+  args: { refresh?: boolean },
+) {
       const directory = policy.rootPath
-      if (!options.enabled) return JSON.stringify(stateFor(directory), null, 2)
-      if (policy.reason) return JSON.stringify(markSkipped(directory, policy.reason), null, 2)
+      if (!options.enabled) return projectStateResult(stateFor(directory))
+      if (policy.reason) return projectStateResult(markSkipped(directory, policy.reason))
       const startup = startupFor(directory)
 
       if (args.refresh) {
@@ -912,76 +900,78 @@ const codebaseMemoryProject = (
           !refreshed.indexed &&
           refreshed.status === "idle"
         ) {
-          startBackgroundIndex(binary, policy, client, options)
+          startBackgroundIndex(binary, policy, options)
         }
       }
 
       const state = syncLockState(directory)
       if (options.indexOnStartup && !startup.indexAttempted && !state.indexed && state.status === "idle") {
-        startBackgroundIndex(binary, policy, client, options)
+        startBackgroundIndex(binary, policy, options)
       }
 
-      return JSON.stringify(syncLockState(directory, stateByRoot.get(directory) || state), null, 2)
-    },
-  })
-
-const codebaseMemoryIndexProject = (
-  binary: string,
-  policy: RootPolicy,
-  client: Client | undefined,
-  options: Required<PluginOptions>,
-) =>
-  tool({
-    description: "Start indexing the resolved codebase-memory project root in the background.",
-    args: {
-      mode: z.enum(["full", "moderate", "fast"]).optional().describe("Index mode for this run. Defaults to the plugin indexMode."),
-      force: z.boolean().optional().describe("Start indexing even if the project is already listed as indexed."),
-    },
-    async execute(args: { mode?: "full" | "moderate" | "fast"; force?: boolean }) {
-      const directory = policy.rootPath
-      if (!options.enabled) return JSON.stringify(markSkipped(directory, "plugin disabled"), null, 2)
-
-      const runOptions = { ...options, indexMode: args.mode ?? options.indexMode }
-      if (policy.reason) return JSON.stringify(markSkipped(directory, policy.reason), null, 2)
-      if (!args.force) {
-        const refreshed = await refreshProjectState(binary, directory)
-        if (refreshed.indexed) return JSON.stringify(refreshed, null, 2)
-      }
-
-      return JSON.stringify(startBackgroundIndex(binary, policy, client, runOptions), null, 2)
-    },
-  })
-
-export const CodebaseMemoryPlugin = async ({ client, directory }: PluginContext, options?: PluginOptions) => {
-  const normalized = normalizeOptions(options)
-  const binary = normalized.binary
-  const rootPath = normalized.enabled ? await resolveProjectRoot(directory) : path.resolve(directory)
-  const policy = normalized.enabled ? rootPolicy(rootPath) : { rootPath, reason: null }
-
-  if (normalized.enabled && !policy.reason) {
-    void ensureProjectIndex(binary, policy, client, normalized)
-  }
-
-  return {
-    config: async (input: ConfigShape) => {
-      if (!normalized.enabled || policy.reason) return
-      input.mcp ??= {}
-      input.mcp["codebase-memory-mcp"] = {
-        type: "local",
-        command: [binary],
-        cwd: rootPath,
-        enabled: true,
-      }
-      injectGraphAgents(input)
-    },
-    tool: {
-      codebase_memory_project: codebaseMemoryProject(binary, policy, client, normalized),
-      codebase_memory_index_project: codebaseMemoryIndexProject(binary, policy, client, normalized),
-    },
-    ...(normalized.enabled && !policy.reason
-      ? { "tool.execute.after": buildGraphAugmentationHook(binary, rootPath) }
-      : {}),
-  }
+      return projectStateResult(syncLockState(directory, stateByRoot.get(directory) || state))
 }
 
-export default { id, server: CodebaseMemoryPlugin }
+async function codebaseMemoryIndexProject(
+  binary: string,
+  policy: RootPolicy,
+  options: Required<PluginOptions>,
+  args: { mode?: "full" | "moderate" | "fast"; force?: boolean },
+) {
+      const directory = policy.rootPath
+      if (!options.enabled) return projectStateResult(markSkipped(directory, "plugin disabled"))
+
+      const runOptions = { ...options, indexMode: args.mode ?? options.indexMode }
+      if (policy.reason) return projectStateResult(markSkipped(directory, policy.reason))
+      if (!args.force) {
+        const refreshed = await refreshProjectState(binary, directory)
+        if (refreshed.indexed) return projectStateResult(refreshed)
+      }
+
+      return projectStateResult(startBackgroundIndex(binary, policy, runOptions))
+}
+
+export default Plugin.define({
+  id,
+  async setup(ctx) {
+    const options = normalizeOptions(ctx.options as PluginOptions)
+    const binary = options.binary
+    const rootPath = options.enabled ? await resolveProjectRoot(ctx.location.directory) : path.resolve(ctx.location.directory)
+    const policy = options.enabled ? rootPolicy(rootPath) : { rootPath, reason: null }
+
+    if (options.enabled && !policy.reason) void ensureProjectIndex(binary, policy, options)
+
+    if (options.enabled && !policy.reason) {
+      await ctx.mcp.transform((editor) => {
+        editor.set("codebase-memory-mcp", { type: "local", command: [binary], cwd: rootPath, disabled: false })
+      })
+      await ctx.agent.transform((editor) => {
+        for (const [name, tools] of [
+          ["codebase-memory-scout", scoutGraphTools],
+          ["codebase-memory", verifiedGraphTools],
+          ["codebase-memory-auditor", verifiedGraphTools],
+        ] as const) {
+          if (!editor.get(name)) editor.update(name, (agent) => Object.assign(agent, graphAgentConfig(name, tools)))
+        }
+      })
+      await ctx.tool.hook("execute.after", buildGraphAugmentationHook(binary, rootPath))
+    }
+
+    await ctx.tool.transform((editor) => {
+      editor.add({
+        name: "codebase_memory_project",
+        description: "Report the current codebase-memory project state for the active OpenCode directory.",
+        input: { type: "object", properties: { refresh: { type: "boolean", description: "Refresh project status from list_projects before returning" } } } as const,
+        output: projectStateOutput,
+        execute: (input) => codebaseMemoryProject(binary, policy, options, input as { refresh?: boolean }),
+      })
+      editor.add({
+        name: "codebase_memory_index_project",
+        description: "Start indexing the resolved codebase-memory project root in the background.",
+        input: { type: "object", properties: { mode: { type: "string", enum: ["full", "moderate", "fast"], description: "Index mode for this run. Defaults to the plugin indexMode." }, force: { type: "boolean", description: "Start indexing even if the project is already listed as indexed." } } } as const,
+        output: projectStateOutput,
+        execute: (input) => codebaseMemoryIndexProject(binary, policy, options, input as { mode?: "full" | "moderate" | "fast"; force?: boolean }),
+      })
+    })
+  },
+})

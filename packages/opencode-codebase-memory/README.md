@@ -33,7 +33,7 @@ The actual graph tools still come from the upstream MCP server after restart.
 
 ### `codebase_memory_project`
 
-Returns the current plugin view of the resolved project root:
+Returns the current plugin view of the resolved project root as a structured OpenCode V2 tool output (with the same JSON rendered as text):
 
 ```json
 {
