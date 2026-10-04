@@ -1,8 +1,9 @@
 import { readFile } from "node:fs/promises"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
+import { Plugin } from "@opencode/plugin"
 import { warn } from "./logger.js"
-// plugin format: { id, server } direct object export
+// plugin format: both V1 and V2 from one default export ({ ...Plugin.define, server })
 
 const id = "opencode-improve"
 
@@ -125,61 +126,126 @@ function replaceCommandTextPart(parts: CommandPart[], prompt: string): void {
   if (textPart) textPart.text = prompt
 }
 
-export default { id, server: async (_context: PluginContext) => {
-    let ownsImproveCommand = false
+const improveCommandDescription =
+  "Route audits and plans. Args: quick|deep|focus|branch|next|plan|review-plan|execute|reconcile|help [--issues]"
 
-    return {
-      // ponytail: config hook types intentionally loose — these exact keys exist on the runtime Config
-      config: async (input: Record<string, unknown>) => {
-        const refsDir = path.resolve(fileURLToPath(new URL("../references", import.meta.url)))
-        let prompt: string
-        try {
-          prompt = await buildPrompt(refsDir)
-        } catch (error) {
-          warn("build_prompt_failed", "Failed to build improve prompt", {
-            refsDir,
-            error: error instanceof Error ? error.message : String(error),
-          })
-          throw error
-        }
+const improveAgentDescription =
+  "Surveys a codebase and writes prioritized, self-contained implementation plans without editing source files."
 
-        const agents = (input.agent ?? (input.agent = {})) as Record<string, Record<string, unknown>>
-        if (!agents.improve) {
-          agents.improve = {
-            description:
-              "Surveys a codebase and writes prioritized, self-contained implementation plans without editing source files.",
-            mode: "primary",
-            prompt,
-            permission: {
-              edit: {
-                "plans/**": "allow",
-                "advisor-plans/**": "allow",
-                "**": "deny",
-              },
-              read: {
-                [`${refsDir}/**`]: "allow",
-              },
-              external_directory: {
-                [`${refsDir}/**`]: "allow",
-              },
+function improveRefsDir(): string {
+  return path.resolve(fileURLToPath(new URL("../references", import.meta.url)))
+}
+
+// V1 entrypoint
+export const ImprovePlugin = async (_context: PluginContext) => {
+  let ownsImproveCommand = false
+
+  return {
+    // ponytail: config hook types intentionally loose — these exact keys exist on the runtime Config
+    config: async (input: Record<string, unknown>) => {
+      const refsDir = improveRefsDir()
+      let prompt: string
+      try {
+        prompt = await buildPrompt(refsDir)
+      } catch (error) {
+        warn("build_prompt_failed", "Failed to build improve prompt", {
+          refsDir,
+          error: error instanceof Error ? error.message : String(error),
+        })
+        throw error
+      }
+
+      const agents = (input.agent ?? (input.agent = {})) as Record<string, Record<string, unknown>>
+      if (!agents.improve) {
+        agents.improve = {
+          description: improveAgentDescription,
+          mode: "primary",
+          prompt,
+          permission: {
+            edit: {
+              "plans/**": "allow",
+              "advisor-plans/**": "allow",
+              "**": "deny",
             },
-          }
+            read: {
+              [`${refsDir}/**`]: "allow",
+            },
+            external_directory: {
+              [`${refsDir}/**`]: "allow",
+            },
+          },
         }
+      }
 
-        const commands = (input.command ?? (input.command = {})) as Record<string, Record<string, unknown>>
-        if (!commands.improve) {
-          commands.improve = {
-            template: "Improve request: $ARGUMENTS",
-            description:
-              "Route audits and plans. Args: quick|deep|focus|branch|next|plan|review-plan|execute|reconcile|help [--issues]",
-            agent: "improve",
-          }
-          ownsImproveCommand = true
+      const commands = (input.command ?? (input.command = {})) as Record<string, Record<string, unknown>>
+      if (!commands.improve) {
+        commands.improve = {
+          template: "Improve request: $ARGUMENTS",
+          description: improveCommandDescription,
+          agent: "improve",
         }
-      },
-      "command.execute.before": async (input: CommandExecuteBeforeInput, output: CommandExecuteBeforeOutput) => {
-        if (!ownsImproveCommand || input.command !== "improve") return
-        replaceCommandTextPart(output.parts, buildImproveRoutePrompt(input.arguments))
-      },
+        ownsImproveCommand = true
+      }
+    },
+    "command.execute.before": async (input: CommandExecuteBeforeInput, output: CommandExecuteBeforeOutput) => {
+      if (!ownsImproveCommand || input.command !== "improve") return
+      replaceCommandTextPart(output.parts, buildImproveRoutePrompt(input.arguments))
+    },
+  }
+}
+
+// V2 entrypoint
+const plugin = Plugin.define({
+  id,
+  async setup(ctx) {
+    const refsDir = improveRefsDir()
+    let prompt: string
+    try {
+      prompt = await buildPrompt(refsDir)
+    } catch (error) {
+      warn("build_prompt_failed", "Failed to build improve prompt", {
+        refsDir,
+        error: error instanceof Error ? error.message : String(error),
+      })
+      throw error
     }
-  }}
+
+    await ctx.agent.transform((editor) => {
+      if (editor.get("improve")) return
+      editor.update("improve", (agent) => {
+        Object.assign(agent, {
+          description: improveAgentDescription,
+          mode: "primary",
+          system: prompt,
+          permissions: [
+            { action: "edit", resource: "**", effect: "deny" },
+            { action: "edit", resource: "plans/**", effect: "allow" },
+            { action: "edit", resource: "advisor-plans/**", effect: "allow" },
+            { action: "read", resource: `${refsDir}/**`, effect: "allow" },
+            { action: "external_directory", resource: `${refsDir}/**`, effect: "allow" },
+          ],
+        })
+      })
+    })
+
+    const existingCommands = new Set((await ctx.command.list()).data.map((entry) => entry.name))
+    await ctx.command.transform((editor) => {
+      if (existingCommands.has("improve")) return
+      editor.add({
+        name: "improve",
+        description: improveCommandDescription,
+        execute: async ({ sessionID, prompt: invocation, delivery }) => {
+          await ctx.session.switchAgent({ sessionID, agent: "improve" })
+          await ctx.session.prompt({
+            ...invocation,
+            sessionID,
+            text: buildImproveRoutePrompt(invocation.text),
+            delivery,
+          })
+        },
+      })
+    })
+  },
+})
+
+export default { ...plugin, server: ImprovePlugin }

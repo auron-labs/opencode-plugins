@@ -4,12 +4,46 @@ import { promises as fs } from "node:fs"
 import { homedir } from "node:os"
 import path from "node:path"
 import readline from "node:readline"
-import { tool } from "@opencode-ai/plugin"
+import { tool, type ToolContext as V1ToolContext } from "@opencode-ai/plugin"
+import { Plugin } from "@opencode/plugin"
 import { info, warn } from "./logger.js"
-// plugin format: { id, server } direct object export
+// plugin format: both V1 and V2 from one default export ({ ...Plugin.define, server })
 
 const execFileAsync = promisify(execFile)
 const z = tool.schema
+
+// V2 registration adapter: reuse each V1 tool definition as the single schema
+// source and expose it through the V2 transform editor. V2 `execute` returns
+// structured content instead of a bare string, so wrap the V1 executor.
+
+type V2ToolContext = {
+  sessionID: string
+  agent: string
+  messageID: string
+  id: string
+  signal?: AbortSignal
+}
+
+function toV2Tool(name: string, definition: ReturnType<typeof tool>) {
+  return {
+    name,
+    description: definition.description,
+    input: z.object(definition.args),
+    execute: async (input: unknown, context: V2ToolContext) => {
+      const result = await definition.execute(input as never, {
+        sessionID: context.sessionID,
+        messageID: context.messageID,
+        agent: context.agent,
+        directory: process.cwd(),
+        worktree: process.cwd(),
+        abort: context.signal ?? new AbortController().signal,
+        metadata: () => {},
+        ask: async () => {},
+      } as V1ToolContext)
+      return typeof result === "string" ? { content: result } : { content: result.output, metadata: result.metadata }
+    },
+  }
+}
 
 // Types
 
@@ -1021,24 +1055,38 @@ const zellijList = tool({
 
 // Plugin entry
 
+const zellijTools = {
+  zellij_spawn: zellijSpawn,
+  zellij_read: zellijRead,
+  zellij_events: zellijEvents,
+  zellij_subscribe: zellijSubscribe,
+  zellij_wait: zellijWait,
+  zellij_stop: zellijStop,
+  zellij_restart: zellijRestart,
+  zellij_list: zellijList,
+} as const
+
+// V1 entrypoint
 export const ZellijPlugin = async (
   _input: { directory: string },
   options?: PluginOptions,
 ) => {
   await ensureInit(options)
 
-  return {
-    tool: {
-      zellij_spawn: zellijSpawn,
-      zellij_read: zellijRead,
-      zellij_events: zellijEvents,
-      zellij_subscribe: zellijSubscribe,
-      zellij_wait: zellijWait,
-      zellij_stop: zellijStop,
-      zellij_restart: zellijRestart,
-      zellij_list: zellijList,
-    },
-  }
+  return { tool: { ...zellijTools } }
 }
 
-export default { id, server: ZellijPlugin }
+// V2 entrypoint
+const plugin = Plugin.define({
+  id,
+  async setup(ctx) {
+    await ensureInit(ctx.options as PluginOptions)
+    await ctx.tool.transform((editor) => {
+      for (const [name, definition] of Object.entries(zellijTools)) {
+        editor.add(toV2Tool(name, definition))
+      }
+    })
+  },
+})
+
+export default { ...plugin, server: ZellijPlugin }

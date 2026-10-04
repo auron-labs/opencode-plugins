@@ -1,13 +1,13 @@
 {
   "repository": "pbakaus/impeccable",
-  "commit": "f88b2837a7d7c3182e46307bbbb091a1ed547571",
-  "committedAt": "2026-08-17T21:32:57Z",
-  "skillVersion": "4.1.1",
+  "commit": "6e802bd0ed99f53180e2359fddab6da8d97970d9",
+  "committedAt": "2026-10-04T09:16:43Z",
+  "skillVersion": "4.5.0",
   "paths": {
     "skill": "skill/SKILL.src.md",
     "agents": "skill/agents",
     "references": "skill/reference",
-    "scripts": "skill/scripts",
-    "cli": "cli"
-  }
+    "scripts": "skill/scripts"
+  },
+  "engineVersion": "0.1.11"
 }

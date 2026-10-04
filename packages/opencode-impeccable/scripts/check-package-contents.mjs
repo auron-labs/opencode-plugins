@@ -8,18 +8,19 @@ export const PACKAGE_ROOT = resolve(import.meta.dirname, "..")
 const REQUIRED = [
   "dist/index.js",
   "dist/index.d.ts",
-  "references/SKILL.md",
+  "vendor/impeccable/skill/SKILL.md",
   "upstream-lock.json",
   "vendor/impeccable/LICENSE",
   "vendor/impeccable/skill/agents/impeccable-asset-producer.md",
-  "vendor/impeccable/skill/scripts/context.mjs",
-  "vendor/impeccable/skill/scripts/hook.mjs",
-  "vendor/impeccable/skill/scripts/live.mjs",
-  "vendor/impeccable/cli/bin/cli.js",
-  "vendor/impeccable/cli/bin/commands/ignores.mjs",
+  "vendor/impeccable/skill/reference/ios.md",
+  "vendor/impeccable/skill/scripts/impeccable",
+  "vendor/impeccable/skill/scripts/impeccable.cmd",
+  "vendor/impeccable/skill/scripts/VERSION",
+  "vendor/impeccable/skill/scripts/command-metadata.json",
+  "vendor/impeccable/skill/scripts/live-browser.js",
 ]
 
-const PACKED_ROOTS = ["references", "vendor/impeccable"]
+const PACKED_ROOTS = ["vendor/impeccable"]
 
 async function packPaths(root) {
   let output

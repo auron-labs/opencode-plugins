@@ -4,25 +4,29 @@
 
 [![License](https://img.shields.io/github/license/auron-labs/opencode-plugins?style=flat-square)](./LICENSE) [![CI](https://img.shields.io/github/actions/workflow/status/auron-labs/opencode-plugins/ci.yaml?branch=main&style=flat-square&label=ci)](https://github.com/auron-labs/opencode-plugins/actions/workflows/ci.yaml) [![Release](https://img.shields.io/github/actions/workflow/status/auron-labs/opencode-plugins/release.yaml?branch=main&style=flat-square&label=release)](https://github.com/auron-labs/opencode-plugins/actions/workflows/release.yaml)
 
-OpenCode plugin workspace with small, focused packages for codebase indexing, audit planning, provider auth, and terminal automation.
+OpenCode plugin workspace for design workflows, audit planning, and git worktree management. Maintained packages support OpenCode v1 (1.18.29+) and v2 from the same package.
 
 ## Packages
 
 | Package | Use it for | Install |
 | --- | --- | --- |
-| [@auron-labs/opencode-codebase-memory](./packages/opencode-codebase-memory) | OpenCode plugin for codebase-memory-mcp with startup indexing for the active project. | `bun add @auron-labs/opencode-codebase-memory` |
-| [@auron-labs/opencode-impeccable](./packages/opencode-impeccable) | Self-contained OpenCode port of Impeccable with editing commands, typed workflow tools, and a post-edit design detector. | `bun add @auron-labs/opencode-impeccable` |
+| [@auron-labs/opencode-impeccable](./packages/opencode-impeccable) | OpenCode v1/v2 port of Impeccable with typed workflow tools and the native Rust design engine. | `bun add @auron-labs/opencode-impeccable` |
 | [@auron-labs/opencode-improve](./packages/opencode-improve) | OpenCode plugin that injects an improve agent for auditing codebases and writing self-contained implementation plans. | `bun add @auron-labs/opencode-improve` |
-| [@auron-labs/opencode-omniroute-auth](./packages/opencode-omniroute-auth) | OpenCode authentication plugin for OmniRoute API with /connect command and dynamic model fetching | `bun add @auron-labs/opencode-omniroute-auth` |
 | [@auron-labs/opencode-worktrunk](./packages/opencode-worktrunk) | OpenCode plugin that wraps the Worktrunk CLI (`wt`) for git worktree management — list, switch/create, remove, merge, step, and arbitrary `wt` passthrough. | `bun add @auron-labs/opencode-worktrunk` |
-| [@auron-labs/opencode-zellij](./packages/opencode-zellij) | OpenCode plugin for managing Zellij panes with event subscriptions, output reading, and lifecycle tracking. | `bun add @auron-labs/opencode-zellij` |
+
+## Deprecated packages
+
+These packages are no longer maintained and will not receive OpenCode v2 support. Existing releases remain available for legacy use.
+
+- [@auron-labs/opencode-codebase-memory](./packages/opencode-codebase-memory)
+- [@auron-labs/opencode-omniroute-auth](./packages/opencode-omniroute-auth)
+- [@auron-labs/opencode-zellij](./packages/opencode-zellij)
 
 Each package is published to npm and can also be installed with `npm install <package>` if you are not using Bun.
 
 Some plugins also expect local tools on `PATH`:
 
-- `@auron-labs/opencode-codebase-memory` expects `codebase-memory-mcp` unless you configure a custom binary path.
-- `@auron-labs/opencode-zellij` expects a running Zellij session and the `zellij` binary.
+- `@auron-labs/opencode-impeccable` installs the native Rust engine through platform-specific optional dependencies; keep optional dependencies enabled.
 - `@auron-labs/opencode-worktrunk` expects the `wt` (Worktrunk) CLI on `PATH` unless you configure a custom binary path.
 
 ## Quick Start
@@ -30,17 +34,18 @@ Some plugins also expect local tools on `PATH`:
 Install the plugin you want, add it to your OpenCode config, then restart OpenCode.
 
 ```bash
-bun add @auron-labs/opencode-codebase-memory
+bun add @auron-labs/opencode-improve
 ```
+
+OpenCode v2:
 
 ```json
 {
-  "plugins": [
-    "@auron-labs/opencode-codebase-memory",
-    "@auron-labs/opencode-improve"
-  ]
+  "plugins": ["@auron-labs/opencode-improve"]
 }
 ```
+
+OpenCode v1 (1.18.29+): use `"plugin": ["@auron-labs/opencode-improve"]` instead. V2 options use `{ "package": "<package>", "options": {} }`; V1 options use `["<package>", {}]`.
 
 Package-specific configuration, requirements, and examples live in each package README:
 

@@ -7,18 +7,18 @@ Designed for agents that need to manage parallel worktrees — create a worktree
 ## Install
 
 ```bash
-opencode plugin @auron-labs/opencode-worktrunk [--global]
+bun add @auron-labs/opencode-worktrunk
 ```
 
 ## Requirements
 
-- OpenCode installed and loading plugins from your config.
+- OpenCode v1 1.18.29 or newer, or OpenCode v2.
 - The Worktrunk CLI (`wt`) installed and on `PATH` (or set the `binary` option). See the [Worktrunk install docs](https://worktrunk.dev/).
 - `wt` operates on the current repository, so it runs from the OpenCode session directory by default. Override per-call with the `cwd` argument.
 
 ## Usage
 
-Add to your OpenCode config:
+OpenCode v1 configuration:
 
 ```json
 {
@@ -27,6 +27,18 @@ Add to your OpenCode config:
   ]
 }
 ```
+
+OpenCode v2 uses `plugins` and object options:
+
+```json
+{
+  "plugins": [
+    { "package": "@auron-labs/opencode-worktrunk", "options": {} }
+  ]
+}
+```
+
+Both versions load the same package; v1 calls `server()` and v2 calls `setup()`.
 
 With options:
 

@@ -10,10 +10,9 @@ on:
         required: true
         type: choice
         options:
-          - packages/opencode-codebase-memory
+          - packages/opencode-impeccable
           - packages/opencode-improve
-          - packages/opencode-omniroute-auth
-          - packages/opencode-zellij
+          - packages/opencode-worktrunk
 
 permissions:
   contents: write
@@ -79,6 +78,8 @@ jobs:
         if: ${{ matrix.package == 'packages/opencode-impeccable' }}
         working-directory: ${{ matrix.package }}
         run: bun run sync:check
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
 
       - name: Verify Impeccable package contents
         if: ${{ matrix.package == 'packages/opencode-impeccable' }}
@@ -134,6 +135,8 @@ jobs:
         if: ${{ inputs.package == 'packages/opencode-impeccable' }}
         working-directory: ${{ inputs.package }}
         run: bun run sync:check
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
 
       - name: Verify Impeccable package contents
         if: ${{ inputs.package == 'packages/opencode-impeccable' }}

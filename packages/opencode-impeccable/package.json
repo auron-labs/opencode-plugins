@@ -1,7 +1,7 @@
 {
   "name": "@auron-labs/opencode-impeccable",
   "version": "0.5.0",
-  "description": "Self-contained OpenCode port of Impeccable with editing commands, typed workflow tools, and a post-edit design detector.",
+  "description": "OpenCode v1/v2 port of Impeccable with typed workflow tools and the native Rust design engine.",
   "license": "MIT",
   "type": "module",
   "sideEffects": false,
@@ -15,7 +15,6 @@
   },
   "files": [
     "dist",
-    "references",
     "vendor",
     "upstream-lock.json",
     "README.md",
@@ -33,20 +32,16 @@
   "publishConfig": {
     "access": "public"
   },
-  "engines": {
-    "node": ">=22.18.0"
-  },
   "dependencies": {
     "@opencode-ai/plugin": "^1.17.15",
-    "css-select": "^7.0.0",
-    "css-tree": "^3.2.1",
-    "domutils": "^4.0.2",
-    "fflate": "^0.8.3",
-    "htmlparser2": "^12.0.0",
-    "marked": "^18.0.5"
+    "@opencode/plugin": "^2.0.3"
   },
   "optionalDependencies": {
-    "puppeteer": "^25.1.0"
+    "@impeccable/cli-darwin-arm64": "0.1.11",
+    "@impeccable/cli-darwin-x64": "0.1.11",
+    "@impeccable/cli-linux-x64": "0.1.11",
+    "@impeccable/cli-linux-arm64": "0.1.11",
+    "@impeccable/cli-windows-x64": "0.1.11"
   },
   "devDependencies": {
     "@types/node": "^26.1.1",

@@ -18,11 +18,11 @@ bun add @auron-labs/opencode-improve
 
 ## Requirements
 
-- OpenCode installed and loading plugins from your config.
+- OpenCode v1 1.18.29 or newer, or OpenCode v2.
 
 ## Usage
 
-Add to your OpenCode config:
+OpenCode v1 configuration:
 
 ```json
 {
@@ -31,6 +31,18 @@ Add to your OpenCode config:
   ]
 }
 ```
+
+OpenCode v2 uses `plugins` and object options:
+
+```json
+{
+  "plugins": [
+    { "package": "@auron-labs/opencode-improve", "options": {} }
+  ]
+}
+```
+
+Both versions load the same package; v1 calls `server()` and v2 calls `setup()`.
 
 Restart OpenCode. The plugin adds:
 

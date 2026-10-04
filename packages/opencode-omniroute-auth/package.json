@@ -56,13 +56,16 @@
   },
   "dependencies": {},
   "peerDependencies": {
-    "@opencode-ai/plugin": "*"
+    "@opencode/plugin": "0.0.0-dev-19657"
   },
   "devDependencies": {
+    "@opencode/plugin": "0.0.0-dev-19657",
     "@types/node": "^26.1.1",
     "typescript": "^7.0.2"
   },
   "engines": {
     "node": ">=20.0.0"
-  }
+  },
+  "deprecated": "Deprecated: this plugin is no longer maintained and will not receive OpenCode v2 support.",
+  "private": true
 }

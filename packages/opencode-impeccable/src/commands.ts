@@ -31,6 +31,7 @@ export const COMMANDS: ImperfectableCommand[] = [
   { name: "clarify", category: "Fix", description: "Improve UX copy, labels, and error messages", reference: "clarify.md" },
   { name: "adapt", category: "Fix", description: "Adapt for different devices and screen sizes", reference: "adapt.md", nativeReference: "adapt.native.md" },
   { name: "optimize", category: "Fix", description: "Diagnose and fix UI performance", reference: "optimize.md" },
+  { name: "generate", category: "Iterate", description: "Generate live variants for a named element", reference: "generate.md" },
   { name: "live", category: "Iterate", description: "Visual variant mode: pick elements in the browser, generate alternatives", reference: "live.md" },
 ]
 
@@ -40,10 +41,10 @@ export function describeCommand(cmd: ImperfectableCommand): string {
   const parts = [
     `/${cmd.name}${cmd.category === "Iterate" ? "" : " [target]"} — ${cmd.description}`,
   ]
-  if (cmd.nativeReference) parts.push(`(native: references/${cmd.nativeReference})`)
+  if (cmd.nativeReference) parts.push(`(native: reference/${cmd.nativeReference})`)
   if (cmd.deprecated) parts.push("(deprecated)")
   if (cmd.aliases?.length) parts.push(`aliases: ${cmd.aliases.join(", ")}`)
-  parts.push(`references/${cmd.reference}`)
+  parts.push(`reference/${cmd.reference}`)
   return parts.join(" · ")
 }
 

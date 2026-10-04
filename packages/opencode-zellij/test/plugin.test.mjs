@@ -60,3 +60,30 @@ test('zellij_list reports disconnected status for a missing binary', async () =>
     rmSync(tempDir, { recursive: true, force: true })
   }
 })
+
+test('supports the v2 plugin shape', async () => {
+  assert.equal(typeof pluginModule.setup, 'function')
+
+  const added = []
+  const ctx = {
+    options: { binary: 'definitely-missing-zellij', closeOnExitCleanup: false },
+    tool: { transform: async (callback) => callback({ add: (tool) => added.push(tool) }) },
+  }
+
+  await pluginModule.setup(ctx)
+
+  assert.deepEqual(added.map((tool) => tool.name).sort(), [
+    'zellij_events',
+    'zellij_list',
+    'zellij_read',
+    'zellij_restart',
+    'zellij_spawn',
+    'zellij_stop',
+    'zellij_subscribe',
+    'zellij_wait',
+  ])
+  for (const tool of added) {
+    assert.equal(typeof tool.execute, 'function')
+    assert.ok(tool.input)
+  }
+})

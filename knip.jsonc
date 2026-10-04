@@ -18,9 +18,8 @@
     },
     "packages/opencode-impeccable": {
       "project": ["src/**", "test/**", "scripts/**"],
-      // Runtime deps of the vendored upstream CLI (vendor/impeccable), which is
-      // executed by path string and invisible to static analysis.
-      "ignoreDependencies": ["css-select", "css-tree", "domutils", "fflate", "htmlparser2", "marked", "zod"],
+      // Native engine binaries are resolved by platform at runtime.
+      "ignoreDependencies": ["@impeccable/cli-*", "zod"],
       "ignoreIssues": {
         "src/commands.ts": ["exports"],
         "src/logger.ts": ["exports"],

@@ -134,3 +134,60 @@ test('plugin preserves existing improve entries', async () => {
   )
   assert.equal(part.text, 'custom command prompt')
 })
+
+test('supports the v2 plugin shape', async () => {
+  assert.equal(typeof pluginModule.setup, 'function')
+
+  const agents = {}
+  const commands = []
+  const ctx = {
+    agent: {
+      transform: async (callback) =>
+        callback({
+          get: (id) => agents[id],
+          update: (id, update) => {
+            const agent = (agents[id] = agents[id] ?? {})
+            update(agent)
+          },
+        }),
+    },
+    command: {
+      list: async () => ({ data: [] }),
+      transform: async (callback) => callback({ add: (definition) => commands.push(definition) }),
+    },
+  }
+
+  await pluginModule.setup(ctx)
+
+  assert.equal(agents.improve.mode, 'primary')
+  assert.match(agents.improve.system, /senior advisor, not an implementer/)
+  assert.equal(agents.improve.permissions[0].effect, 'deny')
+  assert.equal(commands.length, 1)
+  assert.equal(commands[0].name, 'improve')
+  assert.equal(typeof commands[0].execute, 'function')
+})
+
+
+test('v2 command routes requests, preserves prompt options, and keeps user entries', async () => {
+  const userAgent = { system: 'mine' }
+  const commands = []
+  const calls = []
+  const ctx = {
+    agent: { transform: async (callback) => callback({ get: () => userAgent, update: () => assert.fail('existing agent must be preserved') }) },
+    command: { list: async () => ({ data: [] }), transform: async (callback) => callback({ add: (command) => commands.push(command) }) },
+    session: { switchAgent: async (input) => calls.push(input), prompt: async (input) => calls.push(input) },
+  }
+  await pluginModule.setup(ctx)
+  const attachments = [{ type: 'file', uri: 'file:///test' }]
+  await commands[0].execute({ sessionID: 's1', prompt: { text: 'deep security --issues', attachments }, delivery: 'queue' })
+  assert.deepEqual(calls[0], { sessionID: 's1', agent: 'improve' })
+  assert.match(calls[1].text, /Route: focused audit \(security\)/)
+  assert.match(calls[1].text, /Effort modifier: deep/)
+  assert.equal(calls[1].attachments, attachments)
+  assert.equal(calls[1].delivery, 'queue')
+  commands.length = 0
+  ctx.command.list = async () => ({ data: [{ name: 'improve' }] })
+  await pluginModule.setup(ctx)
+  assert.equal(commands.length, 0)
+  assert.equal(userAgent.system, 'mine')
+})

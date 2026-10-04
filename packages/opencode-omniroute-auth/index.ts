@@ -1,7 +1,8 @@
 import { OmniRouteAuthPlugin } from './src/plugin.js';
+import { omniRouteV2Plugin } from './src/plugin-core.js';
 
-export { OmniRouteAuthPlugin };
-export default { id: 'opencode-omniroute-auth', server: OmniRouteAuthPlugin };
+export { OmniRouteAuthPlugin, omniRouteV2Plugin };
+export default { ...omniRouteV2Plugin, server: OmniRouteAuthPlugin };
 export type {
   OmniRouteApiMode,
   OmniRouteConfig,

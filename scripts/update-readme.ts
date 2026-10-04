@@ -9,6 +9,7 @@ interface PackageInfo {
   name: string;
   description: string;
   dir: string;
+  deprecated?: string;
 }
 
 const packages: PackageInfo[] = [];
@@ -19,7 +20,7 @@ for (const entry of readdirSync(packagesDir, { withFileTypes: true })) {
   try {
     const pkg = JSON.parse(readFileSync(pkgJsonPath, 'utf-8'));
     if (pkg.name && pkg.description) {
-      packages.push({ name: pkg.name, description: pkg.description, dir: entry.name });
+      packages.push({ name: pkg.name, description: pkg.description, dir: entry.name, deprecated: pkg.deprecated });
     }
   } catch {
     // ponytail: skip dirs without package.json
@@ -33,34 +34,37 @@ readme += '# opencode-plugins\n\n';
 readme += '[![License](https://img.shields.io/github/license/auron-labs/opencode-plugins?style=flat-square)](./LICENSE) ';
 readme += `[![CI](https://img.shields.io/github/actions/workflow/status/auron-labs/opencode-plugins/ci.yaml?branch=main&style=flat-square&label=ci)](${repo}/actions/workflows/ci.yaml) `;
 readme += `[![Release](https://img.shields.io/github/actions/workflow/status/auron-labs/opencode-plugins/release.yaml?branch=main&style=flat-square&label=release)](${repo}/actions/workflows/release.yaml)\n\n`;
-readme += 'OpenCode plugin workspace with small, focused packages for codebase indexing, audit planning, provider auth, and terminal automation.\n\n';
+readme += 'OpenCode plugin workspace for design workflows, audit planning, and git worktree management. Maintained packages support OpenCode v1 (1.18.29+) and v2 from the same package.\n\n';
 readme += '## Packages\n\n';
 readme += '| Package | Use it for | Install |\n';
 readme += '| --- | --- | --- |\n';
 
-for (const pkg of packages) {
+for (const pkg of packages.filter((pkg) => !pkg.deprecated)) {
   readme += `| [${pkg.name}](./packages/${pkg.dir}) | ${pkg.description} | \`bun add ${pkg.name}\` |\n`;
 }
 
 readme += '\n';
+readme += '## Deprecated packages\n\n';
+readme += 'These packages are no longer maintained and will not receive OpenCode v2 support. Existing releases remain available for legacy use.\n\n';
+for (const pkg of packages.filter((pkg) => pkg.deprecated)) {
+  readme += `- [${pkg.name}](./packages/${pkg.dir})\n`;
+}
+readme += '\n';
 readme += 'Each package is published to npm and can also be installed with `npm install <package>` if you are not using Bun.\n\n';
 readme += 'Some plugins also expect local tools on `PATH`:\n\n';
-readme += '- `@auron-labs/opencode-codebase-memory` expects `codebase-memory-mcp` unless you configure a custom binary path.\n';
-readme += '- `@auron-labs/opencode-zellij` expects a running Zellij session and the `zellij` binary.\n';
+readme += '- `@auron-labs/opencode-impeccable` installs the native Rust engine through platform-specific optional dependencies; keep optional dependencies enabled.\n';
 readme += '- `@auron-labs/opencode-worktrunk` expects the `wt` (Worktrunk) CLI on `PATH` unless you configure a custom binary path.\n\n';
 readme += '## Quick Start\n\n';
 readme += 'Install the plugin you want, add it to your OpenCode config, then restart OpenCode.\n\n';
 readme += '```bash\n';
-readme += 'bun add @auron-labs/opencode-codebase-memory\n';
+readme += 'bun add @auron-labs/opencode-improve\n';
 readme += '```\n\n';
-readme += '```json\n';
+readme += 'OpenCode v2:\n\n```json\n';
 readme += '{\n';
-readme += '  "plugin": [\n';
-readme += '    ["@auron-labs/opencode-codebase-memory", {}],\n';
-readme += '    ["@auron-labs/opencode-improve", {}]\n';
-readme += '  ]\n';
+readme += '  "plugins": ["@auron-labs/opencode-improve"]\n';
 readme += '}\n';
 readme += '```\n\n';
+readme += 'OpenCode v1 (1.18.29+): use `"plugin": ["@auron-labs/opencode-improve"]` instead. V2 options use `{ "package": "<package>", "options": {} }`; V1 options use `["<package>", {}]`.\n\n';
 readme += 'Package-specific configuration, requirements, and examples live in each package README:\n\n';
 
 for (const pkg of packages) {

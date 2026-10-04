@@ -1,7 +1,7 @@
 import { spawn } from "node:child_process"
+import { createRequire } from "node:module"
 import {
   closeSync,
-  existsSync,
   mkdtempSync,
   openSync,
   readFileSync,
@@ -10,9 +10,8 @@ import {
   writeFileSync,
 } from "node:fs"
 import { tmpdir } from "node:os"
-import { isAbsolute, join, normalize, relative, resolve } from "node:path"
+import { dirname, join } from "node:path"
 
-const MINIMUM_NODE = [22, 18, 0] as const
 const DEFAULT_TIMEOUT_MS = 60_000
 const MAX_OUTPUT_BYTES = 8 * 1024 * 1024
 
@@ -22,8 +21,7 @@ export type ImpeccableRuntime = {
   agentsDirAbs: string
   refsDirAbs: string
   scriptsDirAbs: string
-  cliPathAbs: string
-  nodePath: string
+  binary?: string
 }
 
 export type RuntimeResult = {
@@ -54,52 +52,30 @@ export class ImpeccableRuntimeError extends Error {
   }
 }
 
-const nodeChecks = new Map<string, Promise<void>>()
-
-export async function ensureNodeRuntime(nodePath: string): Promise<void> {
-  const cached = nodeChecks.get(nodePath)
-  if (cached) return cached
-  const check = (async () => {
-    const result = await runExecutable(nodePath, ["--version"], { timeoutMs: 10_000 })
-    const match = result.stdout.trim().match(/^v?(\d+)\.(\d+)\.(\d+)/)
-    if (!match) {
-      throw new ImpeccableRuntimeError(
-        `Unable to parse the Node version reported by ${nodePath}: ${result.stdout.trim() || "(no output)"}`,
-        result,
-      )
-    }
-    const version = [Number(match[1]), Number(match[2]), Number(match[3])]
-    if (compareVersions(version, MINIMUM_NODE) < 0) {
-      throw new ImpeccableRuntimeError(
-        `Impeccable requires Node >= ${MINIMUM_NODE.join(".")}; ${nodePath} reports ${version.join(".")}.`,
-        result,
-      )
-    }
-  })()
-  nodeChecks.set(nodePath, check)
+function engineBinary(runtime: ImpeccableRuntime): string {
+  if (runtime.binary) return runtime.binary
+  const os = process.platform === "win32" ? "windows" : process.platform
+  const packageName = `@impeccable/cli-${os}-${process.arch}`
   try {
-    await check
-  } catch (error) {
-    nodeChecks.delete(nodePath)
-    throw error
+    const manifest = createRequire(import.meta.url).resolve(`${packageName}/package.json`)
+    return join(dirname(manifest), "bin", os === "windows" ? "impeccable.exe" : "impeccable")
+  } catch {
+    throw new ImpeccableRuntimeError(
+      `Impeccable Rust engine is unavailable. Install optional dependency ${packageName}, or set the binary option / IMPECCABLE_BIN to a native engine executable.`,
+    )
   }
 }
 
-export async function runRuntimeScript(
+export async function runEngineVerb(
   runtime: ImpeccableRuntime,
-  script: string,
+  verb: string,
   args: string[] = [],
   options: RunOptions = {},
 ): Promise<RuntimeResult> {
-  await ensureNodeRuntime(runtime.nodePath)
-  const scriptPath = resolveBundledPath(runtime.scriptsDirAbs, script)
-  if (!existsSync(scriptPath)) {
-    throw new ImpeccableRuntimeError(`Bundled Impeccable script is missing: ${script}`)
+  if (!/^[a-z][a-z0-9-]*$/.test(verb)) {
+    throw new ImpeccableRuntimeError(`Invalid Impeccable engine verb: ${verb}`)
   }
-  return runChecked(runtime.nodePath, [scriptPath, ...args], {
-    ...options,
-    cwd: options.cwd ?? runtime.worktree,
-  })
+  return runImpeccableCli(runtime, [verb, ...args], options)
 }
 
 export async function runImpeccableCli(
@@ -107,13 +83,15 @@ export async function runImpeccableCli(
   args: string[],
   options: RunOptions = {},
 ): Promise<RuntimeResult> {
-  await ensureNodeRuntime(runtime.nodePath)
-  if (!existsSync(runtime.cliPathAbs)) {
-    throw new ImpeccableRuntimeError("Bundled Impeccable CLI entrypoint is missing.")
-  }
-  return runChecked(runtime.nodePath, [runtime.cliPathAbs, ...args], {
+  return runChecked(engineBinary(runtime), args, {
     ...options,
     cwd: options.cwd ?? runtime.worktree,
+    env: {
+      ...process.env,
+      ...options.env,
+      IMPECCABLE_SKILL_DIR: dirname(runtime.refsDirAbs),
+      IMPECCABLE_SELF: join(runtime.scriptsDirAbs, "impeccable"),
+    },
   })
 }
 
@@ -121,7 +99,7 @@ export async function runHookScript(
   runtime: ImpeccableRuntime,
   event: Record<string, unknown>,
 ): Promise<RuntimeResult> {
-  return runRuntimeScript(runtime, "hook.mjs", [], {
+  return runEngineVerb(runtime, "hook", [], {
     stdin: JSON.stringify(event),
     timeoutMs: 60_000,
     env: {
@@ -131,16 +109,6 @@ export async function runHookScript(
       IMPECCABLE_HOOK_HARNESS: "github",
     },
   })
-}
-
-function resolveBundledPath(root: string, value: string): string {
-  if (isAbsolute(value)) throw new ImpeccableRuntimeError(`Bundled script path must be relative: ${value}`)
-  const target = resolve(root, normalize(value))
-  const rel = relative(resolve(root), target)
-  if (rel.startsWith("..") || isAbsolute(rel)) {
-    throw new ImpeccableRuntimeError(`Bundled script path escapes the runtime directory: ${value}`)
-  }
-  return target
 }
 
 async function runChecked(
@@ -240,22 +208,12 @@ function runExecutable(executable: string, args: string[], options: RunOptions):
   })
 }
 
-function compareVersions(left: readonly number[], right: readonly number[]): number {
-  for (let index = 0; index < Math.max(left.length, right.length); index += 1) {
-    const delta = (left[index] ?? 0) - (right[index] ?? 0)
-    if (delta !== 0) return delta
-  }
-  return 0
-}
-
 export function defaultRuntimePaths(packageRoot: string) {
   const vendorRoot = join(packageRoot, "vendor", "impeccable")
   return {
     agentsDirAbs: join(vendorRoot, "skill", "agents"),
-    refsDirAbs: join(packageRoot, "references"),
-    // Preserve the upstream skill/scripts layout. The hook resolves its
-    // detector relative to this directory, so flattening it breaks detection.
+    refsDirAbs: join(vendorRoot, "skill", "reference"),
+    // The Rust engine resolves native references and browser assets here.
     scriptsDirAbs: join(vendorRoot, "skill", "scripts"),
-    cliPathAbs: join(vendorRoot, "cli", "bin", "cli.js"),
   }
 }

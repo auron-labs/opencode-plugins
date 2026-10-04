@@ -28,6 +28,7 @@
     "access": "public"
   },
   "dependencies": {
+    "@opencode-ai/plugin": "^1.17.15",
     "@opencode/plugin": "^2.0.3"
   },
   "devDependencies": {
@@ -48,5 +49,7 @@
   "bugs": {
     "url": "https://github.com/auron-labs/opencode-plugins/issues"
   },
-  "homepage": "https://github.com/auron-labs/opencode-plugins/tree/main/packages/opencode-codebase-memory"
+  "homepage": "https://github.com/auron-labs/opencode-plugins/tree/main/packages/opencode-codebase-memory",
+  "deprecated": "Deprecated: this plugin is no longer maintained and will not receive OpenCode v2 support.",
+  "private": true
 }

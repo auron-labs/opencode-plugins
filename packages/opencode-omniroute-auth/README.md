@@ -1,5 +1,7 @@
 # OpenCode OmniRoute Auth Plugin
 
+> Deprecated. This plugin is no longer maintained and will not receive OpenCode v2 support. Existing releases remain available for legacy use.
+
 🔌 Authentication plugin for [OpenCode](https://opencode.ai) to connect to [OmniRoute](https://omniroute.ai) API.
 
 ## Features

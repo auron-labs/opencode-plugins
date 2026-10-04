@@ -11,7 +11,7 @@ import { guardFsPath } from "../dist/tools.js"
 const EXPECTED_COMMANDS = [
   "craft", "shape", "init", "document", "extract", "critique", "audit", "polish",
   "bolder", "quieter", "distill", "harden", "onboard", "animate", "colorize",
-  "typeset", "layout", "delight", "overdrive", "clarify", "adapt", "optimize", "live",
+  "typeset", "layout", "delight", "overdrive", "clarify", "adapt", "optimize", "live", "generate",
 ]
 
 const EXPECTED_TOOLS = [
@@ -44,6 +44,12 @@ const EXPECTED_TOOLS = [
   "impeccable_live_complete",
   "impeccable_live_insert",
   "impeccable_live_wrap",
+  "impeccable_live_generate",
+  "impeccable_build_phase",
+  "impeccable_comp_spec",
+  "impeccable_comp_diff",
+  "impeccable_component_review",
+  "impeccable_font_match",
 ]
 
 const EXPECTED_AUXILIARY_AGENTS = [
@@ -62,7 +68,7 @@ function workspace() {
 async function createPlugin(root, client, options = {}) {
   return pluginModule.server(
     { directory: root, worktree: root, client },
-    { nodePath: process.execPath, ...options },
+    options,
   )
 }
 
@@ -396,11 +402,150 @@ test("detect resolves clean targets and rejects true launch failures", async () 
     const plugin = await createPlugin(root)
     const clean = await plugin.tool.impeccable_detect.execute({ targets: ["clean.css"], jsonOutput: true }, {})
     assert.deepEqual(JSON.parse(clean), [])
-    const broken = await createPlugin(root, undefined, { nodePath: "/nonexistent/node" })
+    const broken = await createPlugin(root, undefined, { binary: "/nonexistent/impeccable" })
     await assert.rejects(
       broken.tool.impeccable_detect.execute({ targets: ["clean.css"] }, {}),
       /Unable to launch|ENOENT/,
     )
+  } finally {
+    rmSync(root, { recursive: true, force: true })
+  }
+})
+
+test('supports the v2 plugin shape with tools, agents, and commands', async () => {
+  const root = workspace()
+  try {
+    assert.equal(typeof pluginModule.setup, 'function')
+
+    const agents = {}
+    const commands = []
+    const tools = []
+    const hooks = {}
+    const prompts = []
+    const switched = []
+    let subscriptionSignal
+    const ctx = {
+      location: { directory: root, project: { canonical: root } },
+      options: {},
+      agent: {
+        transform: async (callback) =>
+          callback({
+            get: (id) => agents[id],
+            update: (id, update) => {
+              const agent = (agents[id] = agents[id] ?? {})
+              update(agent)
+            },
+          }),
+      },
+      command: {
+        list: async () => ({ data: [] }),
+        transform: async (callback) => callback({ add: (definition) => commands.push(definition) }),
+      },
+      tool: {
+        transform: async (callback) => callback({ add: (tool) => tools.push(tool) }),
+        hook: async (name, callback) => { hooks[name] = callback },
+      },
+      event: {
+        subscribe: (options) => {
+          subscriptionSignal = options.signal
+          return {
+            [Symbol.asyncIterator]: () => ({
+              next: () => new Promise((resolve) => options.signal.addEventListener('abort', () => resolve({ done: true }), { once: true })),
+            }),
+          }
+        },
+      },
+    }
+
+    ctx.session = {
+      switchAgent: async (input) => switched.push(input),
+      prompt: async (input) => prompts.push(input),
+    }
+    const cleanup = await pluginModule.setup(ctx)
+
+    assert.equal(agents.impeccable.mode, 'primary')
+    assert.match(agents.impeccable.system, /implementation agent, not a read-only planner/)
+    for (const name of EXPECTED_AUXILIARY_AGENTS) {
+      assert.ok(agents[name], `missing auxiliary agent ${name}`)
+      assert.equal(agents[name].mode, 'subagent')
+    }
+    assert.deepEqual(tools.map((tool) => tool.name).sort(), EXPECTED_TOOLS.slice().sort())
+    assert.ok(commands.find((command) => command.name === 'impeccable'))
+    assert.ok(commands.find((command) => command.name === 'impeccable-audit'))
+    const invocation = { sessionID: 's1', prompt: { text: 'polish src', attachments: [{ type: 'file', uri: 'file:///test' }] }, delivery: 'queue' }
+    await commands.find((command) => command.name === 'impeccable').execute(invocation)
+    assert.deepEqual(switched, [{ sessionID: 's1', agent: 'impeccable' }])
+    assert.match(prompts[0].text, /Run \/impeccable polish/)
+    assert.match(prompts[0].text, /Invocation arguments: src/)
+    assert.equal(prompts[0].delivery, 'queue')
+    assert.equal(prompts[0].attachments, invocation.prompt.attachments)
+
+    writeFileSync(join(root, 'bad.css'), '.brand { font-family: Inter; }')
+    const detect = tools.find((tool) => tool.name === 'impeccable_detect')
+    const result = await detect.execute({ targets: ['bad.css'], jsonOutput: true }, { sessionID: 's1', messageID: 'm1', agent: 'impeccable', id: 'c1' })
+    assert.equal(JSON.parse(result.content)[0].antipattern, 'overused-font')
+
+    const edit = { status: 'completed', tool: 'write', sessionID: 's1', input: { filePath: join(root, 'bad.css') }, result: { content: [{ type: 'text', text: 'Done' }, { type: 'file', uri: 'file:///image', mime: 'image/png' }], metadata: { keep: true } } }
+    await hooks['execute.after'](edit)
+    assert.equal(edit.result.content[0].text, 'Done')
+    assert.equal(edit.result.content[1].type, 'file')
+    assert.match(edit.result.content.at(-1).text, /<system-reminder>/)
+    assert.equal(edit.result.metadata.keep, true)
+    const failed = { ...edit, status: 'error', error: new Error('failed') }
+    const before = failed.result
+    await hooks['execute.after'](failed)
+    assert.equal(failed.result, before)
+    cleanup()
+    assert.equal(subscriptionSignal.aborted, true)
+  } finally {
+    rmSync(root, { recursive: true, force: true })
+  }
+})
+
+
+test("new Rust workflow helpers reject external paths before executing", async () => {
+  const root = workspace()
+  try {
+    const plugin = await createPlugin(root)
+    for (const args of [["--comp", "/etc/passwd"], ["--regions=/etc/passwd"], ["--comp"]]) {
+      await assert.rejects(plugin.tool.impeccable_comp_spec.execute({ args }, {}), /outside the active worktree|requires a path/)
+    }
+    const output = await plugin.tool.impeccable_comp_spec.execute({ args: ["--schema"] }, {})
+    assert.ok(JSON.parse(output))
+  } finally {
+    rmSync(root, { recursive: true, force: true })
+  }
+})
+
+test("Rust ignores supports native actions and legacy add/remove aliases", async () => {
+  const root = workspace()
+  try {
+    const plugin = await createPlugin(root)
+    const ignores = plugin.tool.impeccable_ignores
+    await ignores.execute({ action: "add", rule: "overused-font", value: "Inter", reason: "Brand font" }, {})
+    assert.match(await ignores.execute({ action: "list" }, {}), /inter/i)
+    await ignores.execute({ action: "remove-value", rule: "overused-font", value: "Inter" }, {})
+    assert.doesNotMatch(await ignores.execute({ action: "list" }, {}), /inter/i)
+    await ignores.execute({ action: "add-file", path: "src/legacy/**" }, {})
+    assert.match(await ignores.execute({ action: "list" }, {}), /legacy/)
+    await ignores.execute({ action: "clear" }, {})
+    assert.doesNotMatch(await ignores.execute({ action: "list" }, {}), /legacy/)
+  } finally {
+    rmSync(root, { recursive: true, force: true })
+  }
+})
+
+test("Rust image helpers forward reference, background, and scan arguments", async () => {
+  const root = workspace()
+  try {
+    const binary = join(root, "engine")
+    writeFileSync(binary, `#!${process.execPath}\nconsole.log(JSON.stringify(process.argv.slice(2)))`, { mode: 0o755 })
+    const plugin = await createPlugin(root, undefined, { binary })
+    const output = await plugin.tool.impeccable_generate_image.execute({ output: "plate.png", prompt: "cutout", referenceImages: ["comp.png"], background: "transparent" }, {})
+    assert.deepEqual(JSON.parse(output), ["generate-image", "--out", "plate.png", "--prompt", "cutout", "--background", "transparent", "--ref", "comp.png"])
+    const scan = await plugin.tool.impeccable_embed_prompt.execute({ scan: ["assets"] }, {})
+    assert.deepEqual(JSON.parse(scan), ["embed-prompt", "--scan", "assets"])
+    await assert.rejects(plugin.tool.impeccable_generate_image.execute({ output: "plate.png", prompt: "cutout", referenceImages: ["/etc/passwd"] }, {}), /outside the active worktree/)
   } finally {
     rmSync(root, { recursive: true, force: true })
   }

@@ -12,7 +12,7 @@ import { tool, type ToolDefinition } from "@opencode-ai/plugin"
 import { COMMANDS, describeCommand } from "./commands.js"
 import {
   runImpeccableCli,
-  runRuntimeScript,
+  runEngineVerb,
   type ImpeccableRuntime,
   type RuntimeResult,
 } from "./runtime.js"
@@ -52,7 +52,36 @@ export function buildTools(runtime: ImpeccableRuntime): Record<string, ToolDefin
     impeccable_live_complete: liveCompleteTool(runtime),
     impeccable_live_insert: liveInsertTool(runtime),
     impeccable_live_wrap: liveWrapTool(runtime),
+    impeccable_live_generate: engineArgsTool(runtime, "live-generate", "Generate live variants for a named element."),
+    impeccable_build_phase: engineArgsTool(runtime, "build-phase", "Track and advance the upstream build-phase gates."),
+    impeccable_comp_spec: engineArgsTool(runtime, "comp-spec", "Measure a comp and its region map."),
+    impeccable_comp_diff: engineArgsTool(runtime, "comp-diff", "Compare the rendered build with an approved comp."),
+    impeccable_font_match: engineArgsTool(runtime, "font-match", "Measure and rank fonts against a comp region."),
+    impeccable_component_review: engineArgsTool(runtime, "component-review", "Plan, capture, serve, and verify component review."),
   }
+}
+
+function engineArgsTool(runtime: ImpeccableRuntime, verb: string, description: string) {
+  const pathFlags = new Set(["--target", "--file", "--comp", "--build", "--regions", "--out-dir", "--manifest", "--artifact", "--spec", "--entry", "--output", "--out", "--payload"])
+  return tool({
+    description: `${description} Pass the arguments shown in the bundled playbook; do not include the verb.`,
+    args: { args: z.array(z.string()).describe("Native engine arguments from the playbook.") },
+    async execute({ args }) {
+      for (let index = 0; index < args.length; index += 1) {
+        const [flag, inline] = args[index].split(/=(.*)/s)
+        if (!pathFlags.has(flag)) continue
+        const value = inline ?? args[++index]
+        if (!value || value.startsWith("--")) throw new Error(`${flag} requires a path`)
+        guardFsPath(runtime, value, flag)
+      }
+      const result = await runEngineVerb(runtime, verb, args, {
+        timeoutMs: 300_000,
+        // Build/review gates return diagnostics with exit 2 when not satisfied.
+        allowedExitCodes: [0, 2],
+      })
+      return result.stdout.trim() || result.stderr.trim() || "(no output)"
+    },
+  })
 }
 
 function resultText(result: RuntimeResult): string {
@@ -93,7 +122,7 @@ function contextTool(runtime: ImpeccableRuntime) {
     },
     async execute({ target }) {
       if (target) guardFsPath(runtime, target, "target")
-      const result = await runRuntimeScript(runtime, "context.mjs", target ? ["--target", target] : [], {
+      const result = await runEngineVerb(runtime, "context", target ? ["--target", target] : [], {
         timeoutMs: 30_000,
       })
       return markNativeHookActive(resultText(result))
@@ -102,9 +131,9 @@ function contextTool(runtime: ImpeccableRuntime) {
 }
 
 function contextSignalsTool(runtime: ImpeccableRuntime) {
-  return noArgScriptTool(
+  return noArgEngineTool(
     runtime,
-    "context-signals.mjs",
+    "signals",
     "Gather context-aware routing signals for the no-argument Impeccable menu.",
   )
 }
@@ -126,7 +155,7 @@ function detectTool(runtime: ImpeccableRuntime) {
       if (noConfig) args.push("--no-config")
       if (scope) args.push("--scope", scope)
       args.push(...targets)
-      const result = await runRuntimeScript(runtime, "detect.mjs", args, {
+      const result = await runEngineVerb(runtime, "detect", args, {
         timeoutMs: 120_000,
         // The bundled detector exits 2 on primary findings while still
         // producing useful output; its normal outcome is not a failure.
@@ -150,7 +179,7 @@ function doctorTool(runtime: ImpeccableRuntime) {
       const args = ["--json"]
       if (fix) args.push("--fix")
       if (target) args.push("--target", target)
-      return resultText(await runRuntimeScript(runtime, "doctor.mjs", args, { timeoutMs: 60_000 }))
+      return resultText(await runEngineVerb(runtime, "doctor", args, { timeoutMs: 60_000 }))
     },
   })
 }
@@ -201,7 +230,7 @@ function pinTool(runtime: ImpeccableRuntime) {
 }
 
 function hooksStatusTool(runtime: ImpeccableRuntime) {
-  return noArgScriptTool(runtime, "hook-admin.mjs", "Show validated Impeccable hook and ignore configuration.", ["status"])
+  return noArgEngineTool(runtime, "hooks", "Show validated Impeccable hook and ignore configuration.", ["status"])
 }
 
 function hookAdminTool(runtime: ImpeccableRuntime) {
@@ -232,7 +261,7 @@ function hookAdminTool(runtime: ImpeccableRuntime) {
         for (const file of files ?? []) args.push("--file", file)
       }
       if (reason) args.push("--reason", reason)
-      return resultText(await runRuntimeScript(runtime, "hook-admin.mjs", args))
+      return resultText(await runEngineVerb(runtime, "hooks", args))
     },
   })
 }
@@ -242,7 +271,7 @@ function hooksToggleTool(runtime: ImpeccableRuntime) {
     description: "Enable or disable the native Impeccable post-edit detector for this project.",
     args: { enabled: z.boolean().describe("Whether the hook should be enabled.") },
     async execute({ enabled }) {
-      return resultText(await runRuntimeScript(runtime, "hook-admin.mjs", [enabled ? "on" : "off"]))
+      return resultText(await runEngineVerb(runtime, "hooks", [enabled ? "on" : "off"]))
     },
   })
 }
@@ -261,7 +290,7 @@ function hooksIgnoreValueTool(runtime: ImpeccableRuntime) {
       const args = ["ignore-value", rule, value, local ? "--local" : "--shared"]
       if (reason) args.push("--reason", reason)
       for (const file of files ?? []) args.push("--file", file)
-      return resultText(await runRuntimeScript(runtime, "hook-admin.mjs", args))
+      return resultText(await runEngineVerb(runtime, "hooks", args))
     },
   })
 }
@@ -278,7 +307,7 @@ function hooksIgnoreRuleTool(runtime: ImpeccableRuntime) {
       const args = ["ignore-rule", rule]
       if (allValues) args.push("--all-values")
       if (reason) args.push("--reason", reason)
-      return resultText(await runRuntimeScript(runtime, "hook-admin.mjs", args))
+      return resultText(await runEngineVerb(runtime, "hooks", args))
     },
   })
 }
@@ -293,29 +322,48 @@ function hooksIgnoreFileTool(runtime: ImpeccableRuntime) {
     async execute({ path, reason }) {
       const args = ["ignore-file", path]
       if (reason) args.push("--reason", reason)
-      return resultText(await runRuntimeScript(runtime, "hook-admin.mjs", args))
+      return resultText(await runEngineVerb(runtime, "hooks", args))
     },
   })
 }
 
 function hooksResetTool(runtime: ImpeccableRuntime) {
-  return noArgScriptTool(runtime, "hook-admin.mjs", "Reset Impeccable hook configuration and detector caches.", ["reset"])
+  return noArgEngineTool(runtime, "hooks", "Reset Impeccable hook configuration and detector caches.", ["reset"])
 }
 
 function ignoresTool(runtime: ImpeccableRuntime) {
   return tool({
     description: "List, add, or remove detector ignores through the bundled Impeccable CLI implementation.",
     args: {
-      action: z.enum(["list", "add", "remove"]).describe("Ignore operation."),
+      action: z.enum(["list", "add", "remove", "add-rule", "add-file", "add-value", "remove-rule", "remove-file", "remove-value", "clear"]).describe("Native ignore operation; add/remove are compatibility aliases."),
       rule: z.string().optional().describe("Rule id for add/remove."),
       value: z.string().optional().describe("Optional value for add/remove."),
+      path: z.string().optional().describe("File glob for add-file/remove-file."),
+      files: z.array(z.string()).optional().describe("File globs limiting a value ignore."),
+      allValues: z.boolean().optional().describe("Confirm suppression of every value of a rule."),
+      all: z.boolean().optional().describe("Apply removal/clear to shared and local config."),
       local: z.boolean().optional().describe("Use the private local configuration."),
       reason: z.string().optional().describe("Reason stored with an added suppression."),
     },
-    async execute({ action, rule, value, local, reason }) {
-      const args = ["ignores", action]
-      if (rule) args.push(rule)
-      if (value) args.push(value)
+    async execute({ action, rule, value, path, files, allValues, all, local, reason }) {
+      const operation = action === "add" || action === "remove"
+        ? `${action}-${value === undefined ? "rule" : "value"}`
+        : action
+      const args = ["ignores", operation]
+      if (operation.endsWith("-file")) {
+        if (!path) throw new Error("path is required for file ignores")
+        args.push(path)
+      } else if (operation.endsWith("-rule") || operation.endsWith("-value")) {
+        if (!rule) throw new Error("rule is required for rule/value ignores")
+        args.push(rule)
+        if (operation.endsWith("-value")) {
+          if (value === undefined) throw new Error("value is required for value ignores")
+          args.push(value)
+        }
+      }
+      for (const file of files ?? []) args.push("--file", file)
+      if (allValues) args.push("--all-values")
+      if (all) args.push("--all")
       if (local) args.push("--local")
       if (reason) args.push("--reason", reason)
       return resultText(await runImpeccableCli(runtime, args))
@@ -345,7 +393,7 @@ function conceptSeedTool(runtime: ImpeccableRuntime) {
       pushFlag(argv, "--platform", args.platform)
       pushFlag(argv, "--candidate-count", args.candidateCount)
       pushFlag(argv, "--chosen", args.chosen)
-      return resultText(await runRuntimeScript(runtime, "concept-seed.mjs", argv, { timeoutMs: 30_000 }))
+      return resultText(await runEngineVerb(runtime, "concept-seed", argv, { timeoutMs: 30_000 }))
     },
   })
 }
@@ -369,7 +417,7 @@ function critiqueStorageTool(runtime: ImpeccableRuntime) {
         args.push(bodyFile)
       }
       if (action === "trend" && limit) args.push(String(limit))
-      return resultText(await runRuntimeScript(runtime, "critique-storage.mjs", args, {
+      return resultText(await runEngineVerb(runtime, "critique-storage", args, {
         allowedExitCodes: action === "latest" ? [0, 2] : [0],
         env: metadata
           ? { ...process.env, IMPECCABLE_CRITIQUE_META: JSON.stringify(metadata) }
@@ -380,19 +428,26 @@ function critiqueStorageTool(runtime: ImpeccableRuntime) {
 }
 
 function detectCspTool(runtime: ImpeccableRuntime) {
-  return noArgScriptTool(runtime, "detect-csp.mjs", "Detect the project's development CSP configuration shape for live mode.")
+  return noArgEngineTool(runtime, "detect-csp", "Detect the project's development CSP configuration shape for live mode.")
 }
 
 function embedPromptTool(runtime: ImpeccableRuntime) {
   return tool({
     description: "Embed an image-generation prompt in an asset or read a previously embedded prompt.",
     args: {
-      image: z.string().describe("Image path."),
+      image: z.string().optional().describe("Image path for read/write."),
+      scan: z.array(z.string()).min(1).optional().describe("Scan asset directories for missing prompt metadata."),
       read: z.boolean().optional().describe("Read rather than write prompt metadata."),
       prompt: z.string().optional().describe("Prompt text to embed."),
       promptFile: z.string().optional().describe("File containing the prompt text."),
     },
-    async execute({ image, read, prompt, promptFile }) {
+    async execute({ image, scan, read, prompt, promptFile }) {
+      if (scan) {
+        if (image || read || prompt || promptFile) throw new Error("scan cannot be combined with image/read/write options")
+        for (const target of scan) guardFsPath(runtime, target, "scan")
+        return resultText(await runEngineVerb(runtime, "embed-prompt", ["--scan", ...scan]))
+      }
+      if (!image) throw new Error("image is required unless scan is set")
       guardFsPath(runtime, image, "image")
       const args = [image]
       if (read) args.push("--read")
@@ -402,7 +457,7 @@ function embedPromptTool(runtime: ImpeccableRuntime) {
         args.push("--prompt-file", promptFile)
       }
       else throw new Error("prompt or promptFile is required unless read is true")
-      return resultText(await runRuntimeScript(runtime, "embed-prompt.mjs", args))
+      return resultText(await runEngineVerb(runtime, "embed-prompt", args))
     },
   })
 }
@@ -417,8 +472,10 @@ function generateImageTool(runtime: ImpeccableRuntime) {
       promptFile: z.string().optional().describe("File containing the image prompt."),
       size: z.string().optional().describe("Image dimensions, default 1536x1024."),
       quality: z.enum(["low", "medium", "high"]).optional().describe("Generation quality."),
+      referenceImages: z.array(z.string()).optional().describe("In-worktree reference images passed to --ref."),
+      background: z.enum(["transparent", "opaque", "auto"]).optional().describe("Image background."),
     },
-    async execute({ output, prompt, promptFile, size, quality }) {
+    async execute({ output, prompt, promptFile, size, quality, referenceImages, background }) {
       guardFsPath(runtime, output, "output")
       const args = ["--out", output]
       if (prompt) args.push("--prompt", prompt)
@@ -429,7 +486,12 @@ function generateImageTool(runtime: ImpeccableRuntime) {
       else throw new Error("prompt or promptFile is required")
       pushFlag(args, "--size", size)
       pushFlag(args, "--quality", quality)
-      return resultText(await runRuntimeScript(runtime, "generate-image.mjs", args, { timeoutMs: 300_000 }))
+      pushFlag(args, "--background", background)
+      for (const ref of referenceImages ?? []) {
+        guardFsPath(runtime, ref, "referenceImages")
+        args.push("--ref", ref)
+      }
+      return resultText(await runEngineVerb(runtime, "generate-image", args, { timeoutMs: 300_000 }))
     },
   })
 }
@@ -458,7 +520,7 @@ function surfaceBriefTool(runtime: ImpeccableRuntime) {
           args.push(related)
         }
       }
-      return resultText(await runRuntimeScript(runtime, "surface-brief.mjs", args, {
+      return resultText(await runEngineVerb(runtime, "surface-brief", args, {
         allowedExitCodes: action === "read" ? [0, 2] : [0],
       }))
     },
@@ -480,7 +542,7 @@ function serveQuestionTool(runtime: ImpeccableRuntime) {
         args.push("--payload", payload)
       }
       if (key) args.push("--key", key)
-      return resultText(await runRuntimeScript(runtime, "serve-question.mjs", args, {
+      return resultText(await runEngineVerb(runtime, "serve-question", args, {
         timeoutMs: action === "wait" ? 300_000 : 30_000,
         allowedExitCodes: action === "wait" ? [0, 3, 4] : action === "start" ? [0, 2] : [0],
       }))
@@ -494,7 +556,7 @@ function liveTool(runtime: ImpeccableRuntime) {
     args: { target: z.string().optional().describe("Optional monorepo child app or source target.") },
     async execute({ target }) {
       if (target) guardFsPath(runtime, target, "target")
-      return resultText(await runRuntimeScript(runtime, "live.mjs", target ? ["--target", target] : [], { timeoutMs: 60_000 }))
+      return resultText(await runEngineVerb(runtime, "live", target ? ["--target", target] : [], { timeoutMs: 60_000 }))
     },
   })
 }
@@ -514,7 +576,7 @@ function liveServerTool(runtime: ImpeccableRuntime) {
       if (background) args.push("--background")
       if (port) args.push(`--port=${port}`)
       if (keepInject) args.push("--keep-inject")
-      return resultText(await runRuntimeScript(runtime, "live-server.mjs", args, {
+      return resultText(await runEngineVerb(runtime, "live-server", args, {
         timeoutMs: background || action === "stop" ? 30_000 : 24 * 60 * 60 * 1000,
       }))
     },
@@ -532,8 +594,9 @@ function livePollTool(runtime: ImpeccableRuntime) {
       data: z.record(z.string(), z.unknown()).optional().describe("Structured manual-edit result."),
       types: z.array(z.string()).optional().describe("Event types to lease."),
       timeoutMs: z.number().int().min(1).optional().describe("One-shot poll timeout."),
+      thenPoll: z.boolean().optional().describe("After replying, wait for the next live event."),
     },
-    async execute({ eventId, reply, message, file, data, types, timeoutMs }) {
+    async execute({ eventId, reply, message, file, data, types, timeoutMs, thenPoll }) {
       const args = []
       if (reply) {
         if (!eventId) throw new Error("eventId is required for a live poll reply")
@@ -547,15 +610,16 @@ function livePollTool(runtime: ImpeccableRuntime) {
       if (data) args.push("--data", JSON.stringify(data))
       if (types?.length) args.push(`--types=${types.join(",")}`)
       if (timeoutMs) args.push(`--timeout=${timeoutMs}`)
-      return resultText(await runRuntimeScript(runtime, "live-poll.mjs", args, {
-        timeoutMs: reply ? 30_000 : (timeoutMs ?? 600_000) + 10_000,
+      if (thenPoll) args.push("--then-poll")
+      return resultText(await runEngineVerb(runtime, "live-poll", args, {
+        timeoutMs: reply && !thenPoll ? 30_000 : (timeoutMs ?? 600_000) + 10_000,
       }))
     },
   })
 }
 
 function liveStatusTool(runtime: ImpeccableRuntime) {
-  return noArgScriptTool(runtime, "live-status.mjs", "Show durable Impeccable live server and session state.")
+  return noArgEngineTool(runtime, "live-status", "Show durable Impeccable live server and session state.")
 }
 
 function liveResumeTool(runtime: ImpeccableRuntime) {
@@ -563,7 +627,7 @@ function liveResumeTool(runtime: ImpeccableRuntime) {
     description: "Read a durable Impeccable live session checkpoint and its next safe action.",
     args: { id: z.string().optional().describe("Optional session id.") },
     async execute({ id }) {
-      return resultText(await runRuntimeScript(runtime, "live-resume.mjs", id ? ["--id", id] : []))
+      return resultText(await runEngineVerb(runtime, "live-resume", id ? ["--id", id] : []))
     },
   })
 }
@@ -582,7 +646,7 @@ function liveCompleteTool(runtime: ImpeccableRuntime) {
       if (discarded) args.push("--discarded")
       if (error) args.push("--error", error)
       if (force) args.push("--force")
-      return resultText(await runRuntimeScript(runtime, "live-complete.mjs", args))
+      return resultText(await runEngineVerb(runtime, "live-complete", args))
     },
   })
 }
@@ -605,7 +669,7 @@ function liveInsertTool(runtime: ImpeccableRuntime) {
       if (args.file) guardFsPath(runtime, args.file, "file")
       const argv = ["--id", args.id, "--count", String(args.count), "--position", args.position]
       addElementSelectorArgs(argv, args)
-      return resultText(await runRuntimeScript(runtime, "live-insert.mjs", argv))
+      return resultText(await runEngineVerb(runtime, "live-insert", argv))
     },
   })
 }
@@ -629,14 +693,14 @@ function liveWrapTool(runtime: ImpeccableRuntime) {
       const argv = ["--id", args.id, "--count", String(args.count)]
       addElementSelectorArgs(argv, args)
       pushFlag(argv, "--page-url", args.pageUrl)
-      return resultText(await runRuntimeScript(runtime, "live-wrap.mjs", argv))
+      return resultText(await runEngineVerb(runtime, "live-wrap", argv))
     },
   })
 }
 
-function noArgScriptTool(
+function noArgEngineTool(
   runtime: ImpeccableRuntime,
-  script: string,
+  verb: string,
   description: string,
   args: string[] = [],
 ) {
@@ -644,7 +708,7 @@ function noArgScriptTool(
     description,
     args: {},
     async execute() {
-      return resultText(await runRuntimeScript(runtime, script, args))
+      return resultText(await runEngineVerb(runtime, verb, args))
     },
   })
 }
@@ -741,6 +805,16 @@ export function availableReferenceNames(refsDirAbs: string): string[] {
 
 export function adaptReferenceText(body: string): string {
   return body
+    .replaceAll("Bash({{scripts_path}}/impeccable *)", "impeccable_* typed tools")
+    .replace(
+      /(?:\{\{scripts_path\}\}|<skill-base-dir>\/scripts)\/impeccable(?:\.cmd)?\s+([a-z0-9-]+)/g,
+      (_match, verb: string) => {
+        const aliases: Record<string, string> = { signals: "context_signals", hooks: "hook_admin" }
+        return `impeccable_${aliases[verb] ?? verb.replaceAll("-", "_")}`
+      },
+    )
+    .replaceAll("{{scripts_path}}/impeccable <verb>", "the corresponding impeccable_* tool")
+
     .replaceAll("Bash(npx impeccable *)", "impeccable_* typed tools")
     .replaceAll("Bash(node {{scripts_path}}/*)", "impeccable_* typed tools")
     .replace(
@@ -752,6 +826,10 @@ export function adaptReferenceText(body: string): string {
     .replaceAll(
       "npx impeccable update",
       "update the @auron-labs/opencode-impeccable plugin through OpenCode",
+    )
+    .replace(
+      /(?<![\w/-])impeccable (build-phase|comp-spec|comp-diff|component-review|font-match|live-generate|live-server|live-poll|live-status|live-resume|live-complete|live-insert|live-wrap|context|detect|doctor|signals|hooks|concept-seed|critique-storage|detect-csp|embed-prompt|generate-image|surface-brief|serve-question|live|pin)\b/g,
+      (_match, verb: string) => `impeccable_${({ signals: "context_signals", hooks: "hook_admin" } as Record<string, string>)[verb] ?? verb.replaceAll("-", "_")}`,
     )
     .replaceAll("{{command_prefix}}", "/")
 }

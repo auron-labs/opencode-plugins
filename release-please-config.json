@@ -4,11 +4,6 @@
   "include-v-in-tag": true,
   "include-component-in-tag": true,
   "packages": {
-    "packages/opencode-codebase-memory": {
-      "component": "@auron-labs/opencode-codebase-memory",
-      "changelog-path": "CHANGELOG.md",
-      "release-type": "node"
-    },
     "packages/opencode-impeccable": {
       "component": "@auron-labs/opencode-impeccable",
       "changelog-path": "CHANGELOG.md",
@@ -16,16 +11,6 @@
     },
     "packages/opencode-improve": {
       "component": "@auron-labs/opencode-improve",
-      "changelog-path": "CHANGELOG.md",
-      "release-type": "node"
-    },
-    "packages/opencode-omniroute-auth": {
-      "component": "@auron-labs/opencode-omniroute-auth",
-      "changelog-path": "CHANGELOG.md",
-      "release-type": "node"
-    },
-    "packages/opencode-zellij": {
-      "component": "@auron-labs/opencode-zellij",
       "changelog-path": "CHANGELOG.md",
       "release-type": "node"
     },

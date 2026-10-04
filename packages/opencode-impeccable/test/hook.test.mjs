@@ -16,7 +16,7 @@ function workspace() {
 async function pluginFor(root, client) {
   return pluginModule.server(
     { directory: root, worktree: root, client },
-    { nodePath: process.execPath },
+    {},
   )
 }
 
@@ -92,7 +92,7 @@ test("hook runtime failures are fail-open and notify only once per session", asy
         worktree: root,
         client: { tui: { showToast: async ({ body }) => messages.push(body.message) } },
       },
-      { nodePath: join(root, "missing-node") },
+      { binary: join(root, "missing-engine") },
     )
     for (let index = 0; index < 2; index += 1) {
       const output = { title: "write", output: "Done", metadata: {} }

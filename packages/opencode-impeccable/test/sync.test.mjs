@@ -19,13 +19,13 @@ test("sync module is import-safe", () => {
 })
 
 test("managed upstream paths map into references and the bundled runtime", () => {
-  assert.equal(localPathForUpstream("skill/SKILL.src.md"), "references/SKILL.md")
-  assert.equal(localPathForUpstream("skill/reference/polish.md"), "references/polish.md")
+  assert.equal(localPathForUpstream("skill/SKILL.src.md"), "vendor/impeccable/skill/SKILL.md")
+  assert.equal(localPathForUpstream("skill/reference/polish.md"), "vendor/impeccable/skill/reference/polish.md")
   assert.equal(localPathForUpstream("skill/agents/impeccable-documenter.md"), "vendor/impeccable/skill/agents/impeccable-documenter.md")
-  assert.equal(localPathForUpstream("skill/scripts/live/poll-lanes.mjs"), "vendor/impeccable/skill/scripts/live/poll-lanes.mjs")
-  assert.equal(localPathForUpstream("cli/engine/detect-antipatterns.mjs"), "vendor/impeccable/cli/engine/detect-antipatterns.mjs")
-  assert.equal(localPathForUpstream("cli/bin/cli.js"), "vendor/impeccable/cli/bin/cli.js")
-  assert.equal(localPathForUpstream("cli/bin/commands/ignores.mjs"), "vendor/impeccable/cli/bin/commands/ignores.mjs")
+  assert.equal(localPathForUpstream("skill/scripts/live-browser.js"), "vendor/impeccable/skill/scripts/live-browser.js")
+  assert.equal(localPathForUpstream("cli/engine/detect-antipatterns.mjs"), null)
+  assert.equal(localPathForUpstream("cli/bin/cli.js"), null)
+  assert.equal(localPathForUpstream("cli/bin/commands/ignores.mjs"), null)
   assert.equal(localPathForUpstream("README.md"), null)
 })
 
@@ -35,7 +35,7 @@ test("filterImpeccableFiles selects a coherent runtime and sorts local paths", (
     tree: [
       { path: "README.md", type: "blob" },
       { path: "cli/engine/detect.mjs", type: "blob" },
-      { path: "skill/scripts/context.mjs", type: "blob" },
+      { path: "skill/scripts/impeccable", type: "blob" },
       { path: "skill/reference/polish.md", type: "blob" },
       { path: "skill/SKILL.src.md", type: "blob" },
       { path: "skill/agents/impeccable-documenter.md", type: "blob" },
@@ -44,12 +44,11 @@ test("filterImpeccableFiles selects a coherent runtime and sorts local paths", (
     ],
   })
   assert.deepEqual(files.map((file) => file.local), [
-    "references/SKILL.md",
-    "references/polish.md",
     "vendor/impeccable/LICENSE",
-    "vendor/impeccable/cli/engine/detect.mjs",
+    "vendor/impeccable/skill/SKILL.md",
     "vendor/impeccable/skill/agents/impeccable-documenter.md",
-    "vendor/impeccable/skill/scripts/context.mjs",
+    "vendor/impeccable/skill/reference/polish.md",
+    "vendor/impeccable/skill/scripts/impeccable",
   ])
 })
 

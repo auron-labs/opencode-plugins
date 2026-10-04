@@ -1,4 +1,5 @@
 import type { Hooks } from '@opencode-ai/plugin';
+import { Model as V2Model, Plugin, Provider as V2Provider } from '@opencode/plugin';
 import { homedir } from 'os';
 import { readFile } from 'fs/promises';
 import { join } from 'path';
@@ -1143,3 +1144,137 @@ function stripSchemaKeys(schema: Record<string, unknown>): boolean {
 
   return changed;
 }
+
+/**
+ * V2 (Promise plugin) entrypoint.
+ *
+ * V2 has no mutable global config object. OmniRoute is registered as a
+ * provider source plus an API-key integration, and the request interceptor is
+ * passed through the provider settings so authentication and Gemini tool
+ * schema sanitization keep working.
+ */
+function toV2Model(model: OmniRouteModel): V2Model.Info {
+  const supportsVision = model.supportsVision === true;
+  const supportsTools = model.supportsTools !== false;
+  const pricing = model.pricing ?? {};
+
+  const info = {
+    id: model.id,
+    modelID: model.id,
+    providerID: OMNIROUTE_PROVIDER_ID,
+    name: model.name || model.id,
+    family: getModelFamily(model.id),
+    capabilities: {
+      tools: supportsTools,
+      input: supportsVision ? ['text', 'image'] : ['text'],
+      output: ['text'],
+    },
+    variants: [],
+    time: { released: 0 },
+    cost: [
+      {
+        input: pricing.input ?? 0,
+        output: pricing.output ?? 0,
+        cache: { read: 0, write: 0 },
+      },
+    ],
+    status: 'active',
+    enabled: true,
+    limit: {
+      context: model.contextWindow ?? DEFAULT_CONTEXT_LIMIT,
+      output: model.maxTokens ?? DEFAULT_OUTPUT_LIMIT,
+    },
+  };
+  // Branded monetary/ID types cannot be constructed from plain numbers/strings.
+  return info as unknown as V2Model.Info;
+}
+
+export const omniRouteV2Plugin = Plugin.define({
+  id: 'opencode-omniroute-auth',
+  async setup(ctx) {
+    const providerID = OMNIROUTE_PROVIDER_ID as unknown as V2Provider.ID;
+    const options = ctx.options as Record<string, unknown>;
+    const baseUrl = getBaseUrl(options);
+    const apiMode = getApiMode(options);
+
+    // Register the API-key integration used to authenticate OmniRoute.
+    await ctx.integration.transform((editor) => {
+      if (!editor.get(OMNIROUTE_PROVIDER_ID)) {
+        editor.update(OMNIROUTE_PROVIDER_ID, (integration) => {
+          integration.name = OMNIROUTE_PROVIDER_NAME;
+        });
+      }
+      editor.method.update({
+        integrationID: OMNIROUTE_PROVIDER_ID,
+        method: { type: 'key', label: 'API Key' },
+      });
+    });
+
+    const resolveApiKey = async (): Promise<string | undefined> => {
+      try {
+        const connection = await ctx.integration.connection.active(OMNIROUTE_PROVIDER_ID);
+        if (connection) {
+          const credential = await ctx.integration.connection.resolve(connection);
+          if (credential?.type === 'key') return credential.key;
+        }
+      } catch (error) {
+        warn(`Could not resolve OmniRoute credential: ${error}`);
+      }
+      return process.env.OMNIROUTE_API_KEY;
+    };
+
+    const state: { models: V2Model.Info[] } = { models: [] };
+
+    const loadModels = async (apiKey: string | undefined): Promise<void> => {
+      const runtimeConfig = createRuntimeConfig(options, apiKey ?? '');
+      let models = applyModelListConfig(OMNIROUTE_DEFAULT_MODELS, runtimeConfig.modelList);
+      if (apiKey) {
+        try {
+          models = await fetchModels(runtimeConfig, apiKey, false);
+        } catch (error) {
+          warn(`V2 model fetch failed, using defaults: ${error}`);
+        }
+      }
+      const effective = applyModelMetadataOverrides(models, getRawUserModelMetadata(options));
+      state.models = effective.map(toV2Model);
+    };
+
+    const apiKey = await resolveApiKey();
+    await loadModels(apiKey);
+
+    const info: V2Provider.Info = {
+      ...V2Provider.Info.empty(providerID),
+      name: OMNIROUTE_PROVIDER_NAME,
+      activation: 'enabled',
+      package: OMNIROUTE_PROVIDER_NPM,
+      settings: {
+        baseURL: baseUrl,
+        apiMode,
+        modelMetadata: getRawUserModelMetadata(options) ?? {},
+        fetch: createFetchInterceptor(createRuntimeConfig(options, apiKey ?? '')),
+      },
+    };
+
+    await ctx.provider.transform((editor) => {
+      editor.add({ info, models: state.models });
+    });
+
+    // Refresh models when the user connects or swaps their OmniRoute credential.
+    const controller = new AbortController();
+    void (async () => {
+      try {
+        for await (const event of ctx.event.subscribe({ signal: controller.signal })) {
+          const type = (event as { type?: string }).type;
+          if (type !== 'credential.updated' && type !== 'credential.switched') continue;
+          const key = await resolveApiKey();
+          await loadModels(key);
+          await ctx.provider.reload();
+        }
+      } catch {
+        // subscription ends when the plugin unloads and aborts the controller
+      }
+    })();
+
+    return () => controller.abort();
+  },
+});

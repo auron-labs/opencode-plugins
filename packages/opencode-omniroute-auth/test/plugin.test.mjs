@@ -4,7 +4,7 @@ import { mkdir, writeFile, rm } from 'fs/promises';
 import { join } from 'path';
 import { tmpdir } from 'os';
 
-import { OmniRouteAuthPlugin } from '../dist/index.js';
+import pluginModule, { OmniRouteAuthPlugin } from '../dist/index.js';
 import { clearModelCache } from '../dist/runtime.js';
 import { clearModelsDevCache } from '../dist/src/models-dev.js';
 
@@ -1559,4 +1559,59 @@ test('provider hook creates synthetic base model when only variants are returned
   assert.equal(result['codex/gpt-5.5'].limit.context, 256000);
   assert.equal(result['codex/gpt-5.5-high'], undefined);
   assert.equal(result['codex/gpt-5.5-xhigh'], undefined);
+});
+
+test('exposes a v2 plugin that registers the integration, provider, and models', async () => {
+  assert.equal(pluginModule.id, 'opencode-omniroute-auth');
+  assert.equal(pluginModule.server, OmniRouteAuthPlugin);
+  assert.equal(typeof pluginModule.setup, 'function');
+
+  const integrations = {};
+  const methods = [];
+  const providers = [];
+  const ctx = {
+    options: {},
+    integration: {
+      connection: {
+        active: async () => undefined,
+        resolve: async () => undefined,
+      },
+      transform: async (callback) =>
+        callback({
+          get: (id) => integrations[id],
+          update: (id, update) => {
+            const integration = (integrations[id] = integrations[id] ?? {});
+            update(integration);
+          },
+          method: {
+            list: () => [],
+            update: (input) => methods.push(input),
+            remove: () => {},
+          },
+        }),
+    },
+    provider: {
+      transform: async (callback) => callback({ add: (input) => providers.push(input) }),
+      reload: async () => {},
+    },
+    event: {
+      subscribe: (options) => ({
+        [Symbol.asyncIterator]: () => ({
+          next: () =>
+            new Promise((resolve) =>
+              options.signal.addEventListener('abort', () => resolve({ done: true }), { once: true }),
+            ),
+        }),
+      }),
+    },
+  };
+
+  await pluginModule.setup(ctx);
+
+  assert.equal(integrations.omniroute.name, 'OmniRoute');
+  assert.equal(methods[0].method.type, 'key');
+  assert.equal(providers.length, 1);
+  assert.equal(providers[0].info.package, '@ai-sdk/openai-compatible');
+  assert.ok(providers[0].models.length > 0);
+  assert.equal(providers[0].models[0].providerID, 'omniroute');
 });

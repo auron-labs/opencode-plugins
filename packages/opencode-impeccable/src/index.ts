@@ -1,13 +1,50 @@
 import { readFile } from "node:fs/promises"
 import { dirname, join } from "node:path"
 import { fileURLToPath } from "node:url"
-import type { Hooks } from "@opencode-ai/plugin"
+import { tool, type Hooks, type ToolContext as V1ToolContext } from "@opencode-ai/plugin"
+import { Plugin } from "@opencode/plugin"
 import { COMMANDS, describeCommand, MENU_REFERENCE, type ImperfectableCommand } from "./commands.js"
 import { warn } from "./logger.js"
 import { defaultRuntimePaths, runHookScript, type ImpeccableRuntime } from "./runtime.js"
-import { buildTools, loadReferenceText } from "./tools.js"
+import { adaptReferenceText, buildTools, loadReferenceText } from "./tools.js"
 
 const id = "opencode-impeccable"
+// plugin format: both V1 and V2 from one default export ({ ...Plugin.define, server })
+
+const z = tool.schema
+
+// V2 registration adapter: reuse each V1 tool definition as the single schema
+// source and expose it through the V2 transform editor. V2 `execute` returns
+// structured content instead of a bare string, so wrap the V1 executor.
+
+type V2ToolContext = {
+  sessionID: string
+  agent: string
+  messageID: string
+  id: string
+  signal?: AbortSignal
+}
+
+function toV2Tool(name: string, definition: ReturnType<typeof tool>, directory: string) {
+  return {
+    name,
+    description: definition.description,
+    input: z.object(definition.args),
+    execute: async (input: unknown, context: V2ToolContext) => {
+      const result = await definition.execute(input as never, {
+        sessionID: context.sessionID,
+        messageID: context.messageID,
+        agent: context.agent,
+        directory,
+        worktree: directory,
+        abort: context.signal ?? new AbortController().signal,
+        metadata: () => {},
+        ask: async () => { throw new Error("V1 permission requests are unavailable in V2 tools") },
+      } as V1ToolContext)
+      return typeof result === "string" ? { content: result } : { content: result.output, metadata: result.metadata }
+    },
+  }
+}
 const FRONTMATTER = /^---\n[\s\S]*?\n---\n\n/
 const EDIT_TOOLS = new Set(["write", "edit", "multiedit", "patch", "apply_patch"])
 const AUXILIARY_AGENTS = {
@@ -30,7 +67,7 @@ const AUXILIARY_AGENTS = {
 } as const
 
 export type ImperfectablePluginOptions = {
-  nodePath?: string
+  binary?: string
 }
 
 export type PluginContext = {
@@ -82,24 +119,23 @@ OpenCode adapter rules:
 - The user's effective OpenCode permissions remain authoritative. Do not inspect global OpenCode configuration to diagnose a denied action.
 - Call impeccable_context once at the beginning of an Impeccable workflow.
 - Load playbooks with impeccable_reference. Pass the Markdown basename without .md.
-- Any playbook command written as node {{scripts_path}}/<name>.mjs maps to the typed tool impeccable_<name>, with hyphens converted to underscores.
+- Playbook engine verbs map to impeccable_<verb> tools, with hyphens converted to underscores; signals uses impeccable_context_signals and hooks uses impeccable_hook_admin.
 - Use impeccable_hooks_* tools for hook administration and impeccable_pin for shortcuts.
 - Never invoke npx impeccable or a package-external Impeccable binary. The plugin's tools own the bundled runtime.
 - Normal project editing, shell, browser, test, and build tools remain available when the user's permission policy allows them.
 `.trim()
 
 async function loadSkillPrompt(refsDirAbs: string): Promise<string> {
-  const body = await readFile(join(refsDirAbs, "SKILL.md"), "utf8")
-  const upstream = body
+  const body = await readFile(join(refsDirAbs, "..", "SKILL.md"), "utf8")
+  const upstream = adaptReferenceText(body)
     .replace(FRONTMATTER, "")
     .replaceAll("{{command_prefix}}", "/")
-    .replaceAll("node {{scripts_path}}/context.mjs", "the impeccable_context tool")
-    .replaceAll("node {{scripts_path}}/pin.mjs <pin|unpin> <command>", "the impeccable_pin tool")
+
   return `${ADAPTER_PROMPT}\n\n${upstream}`
 }
 
 async function loadAuxiliaryAgentPrompt(agentsDirAbs: string, file: string): Promise<string> {
-  const upstream = (await readFile(join(agentsDirAbs, file), "utf8")).replace(FRONTMATTER, "")
+  const upstream = adaptReferenceText((await readFile(join(agentsDirAbs, file), "utf8")).replace(FRONTMATTER, ""))
   const adapter = [
     "OpenCode adapter rules:",
     "- The user's effective OpenCode permissions are authoritative; this plugin does not override them.",
@@ -191,18 +227,23 @@ function buildMenuRoutePrompt(
   ].join("\n")
 }
 
+function createRuntime(directory: string, worktree?: string, binary?: string): ImpeccableRuntime {
+  const packageRoot = dirname(dirname(fileURLToPath(import.meta.url)))
+  const paths = defaultRuntimePaths(packageRoot)
+  return {
+    directory,
+    worktree: worktree || directory,
+    ...paths,
+    binary: binary?.trim() || process.env.IMPECCABLE_BIN?.trim(),
+  }
+}
+
+// V1 entrypoint
 export const ImperfectablePlugin = async (
   { client, directory, worktree }: PluginContext,
   options?: ImperfectablePluginOptions,
 ): Promise<Hooks> => {
-  const packageRoot = dirname(dirname(fileURLToPath(import.meta.url)))
-  const paths = defaultRuntimePaths(packageRoot)
-  const runtime: ImpeccableRuntime = {
-    directory,
-    worktree: worktree || directory,
-    ...paths,
-    nodePath: options?.nodePath?.trim() || process.env.IMPECCABLE_NODE?.trim() || "node",
-  }
+  const runtime = createRuntime(directory, worktree, options?.binary)
   const tools = buildTools(runtime)
   const commandReferences = new Map<string, string>()
   let routingReference = ""
@@ -289,12 +330,12 @@ function buildHooks(runtime: ImpeccableRuntime, client?: Client) {
           await notify(client, compactReminder(reminder), "warning")
         }
       } catch (error) {
-        warn("detector_failed", "Bundled detector hook failed after an edit", {
-          sessionID,
-          error: error instanceof Error ? error.message : String(error),
-        })
         if (!warnedSessions.has(sessionID)) {
           warnedSessions.add(sessionID)
+          warn("detector_failed", "Bundled detector hook failed after an edit", {
+            sessionID,
+            error: error instanceof Error ? error.message : String(error),
+          })
           await notify(
             client,
             `Impeccable detector could not run: ${error instanceof Error ? error.message : String(error)}`,
@@ -358,4 +399,131 @@ async function notify(client: Client | undefined, message: string, variant: stri
   }
 }
 
-export default { id, server: ImperfectablePlugin }
+// V2 entrypoint
+const plugin = Plugin.define({
+  id,
+  async setup(ctx) {
+    const runtime = createRuntime(
+      ctx.location.directory,
+      ctx.location.directory,
+      ctx.options.binary as string | undefined,
+    )
+
+    const skillPrompt = await loadSkillPrompt(runtime.refsDirAbs)
+    const auxPrompts = new Map<string, string>()
+    for (const [name, agent] of Object.entries(AUXILIARY_AGENTS)) {
+      auxPrompts.set(name, await loadAuxiliaryAgentPrompt(runtime.agentsDirAbs, agent.file))
+    }
+
+    const commandReferences = new Map<string, string>()
+    for (const command of COMMANDS) {
+      commandReferences.set(
+        command.name,
+        loadReferenceText(runtime.refsDirAbs, command.reference.replace(/\.md$/, "")),
+      )
+    }
+    const routingReference = loadReferenceText(runtime.refsDirAbs, MENU_REFERENCE.replace(/\.md$/, ""))
+
+    const tools = buildTools(runtime)
+    const existingCommands = new Set((await ctx.command.list()).data.map((entry) => entry.name))
+    const hooks = buildHooks(runtime)
+
+    await ctx.agent.transform((editor) => {
+      if (!editor.get("impeccable")) {
+        editor.update("impeccable", (agent) => {
+          Object.assign(agent, {
+            description:
+              "Implement and review Impeccable design workflows, including project edits and verification, using the bundled typed tools.",
+            mode: "primary",
+            hidden: true,
+            system: skillPrompt,
+          })
+        })
+      }
+      for (const [name, definition] of Object.entries(AUXILIARY_AGENTS)) {
+        if (editor.get(name)) continue
+        editor.update(name, (agent) => {
+          Object.assign(agent, {
+            description: definition.description,
+            mode: "subagent",
+            hidden: true,
+            system: auxPrompts.get(name) ?? "",
+          })
+        })
+      }
+    })
+
+    await ctx.command.transform((editor) => {
+      for (const command of COMMANDS) {
+        const name = `impeccable-${command.name}`
+        if (existingCommands.has(name)) continue
+        editor.add({
+          name,
+          description: describeCommand(command),
+          execute: async ({ sessionID, prompt, delivery }) => {
+            await ctx.session.switchAgent({ sessionID, agent: "impeccable" })
+            await ctx.session.prompt({
+              ...prompt,
+              sessionID,
+              text: buildCommandPrompt(command, commandReferences.get(command.name)!, prompt.text),
+              delivery,
+            })
+          },
+        })
+      }
+      if (!existingCommands.has("impeccable")) {
+        editor.add({
+          name: "impeccable",
+          description: "Route an Impeccable workflow or show the context-aware Impeccable command menu.",
+          execute: async ({ sessionID, prompt, delivery }) => {
+            await ctx.session.switchAgent({ sessionID, agent: "impeccable" })
+            await ctx.session.prompt({
+              ...prompt,
+              sessionID,
+              text: buildMenuRoutePrompt(prompt.text, routingReference, commandReferences),
+              delivery,
+            })
+          },
+        })
+      }
+    })
+
+    await ctx.tool.transform((editor) => {
+      for (const [name, definition] of Object.entries(tools)) {
+        editor.add(toV2Tool(name, definition, ctx.location.directory))
+      }
+    })
+
+    await ctx.tool.hook("execute.after", async (event) => {
+      if (event.status !== "completed") return
+      const output = { output: "" }
+      await hooks.after({ tool: event.tool, sessionID: event.sessionID, args: event.input }, output)
+      if (!output.output) return
+      const result = event.result
+      event.result = {
+        ...result,
+        content: typeof result.content === "string"
+          ? `${result.content}\n\n${output.output}`
+          : [...(result.content ?? []), { type: "text", text: output.output }],
+      }
+    })
+
+    const controller = new AbortController()
+    void (async () => {
+      try {
+        for await (const event of ctx.event.subscribe({ signal: controller.signal })) {
+          if (event.type === "session.deleted" || event.type === "session.execution.succeeded" ||
+              event.type === "session.execution.failed" || event.type === "session.execution.interrupted") {
+            await hooks.event({ event: { type: "session.idle", properties: { sessionID: event.data.sessionID } } })
+          }
+        }
+      } catch {
+        // subscription ends when the plugin unloads and aborts the controller
+      }
+    })()
+
+    return () => controller.abort()
+  },
+})
+
+export default { ...plugin, server: ImperfectablePlugin }

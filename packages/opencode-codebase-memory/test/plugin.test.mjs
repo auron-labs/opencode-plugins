@@ -4,7 +4,7 @@ import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'nod
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
-import { CodebaseMemoryPlugin } from '../dist/index.js'
+import pluginModule, { CodebaseMemoryPlugin } from '../dist/index.js'
 
 function makeProject() {
   const directory = mkdtempSync(join(tmpdir(), 'opencode-codebase-memory-test-'))
@@ -186,4 +186,10 @@ test('spawn error followed by close produces one terminal error', async () => {
   } finally {
     rmSync(directory, { recursive: true, force: true })
   }
+})
+
+test('exposes both the v1 server and v2 setup entrypoints', () => {
+  assert.equal(pluginModule.id, 'opencode-codebase-memory')
+  assert.equal(pluginModule.server, CodebaseMemoryPlugin)
+  assert.equal(typeof pluginModule.setup, 'function')
 })

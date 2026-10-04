@@ -1,4 +1,5 @@
 import {
+  chmod,
   mkdir,
   readFile,
   readdir,
@@ -17,8 +18,7 @@ const PACKAGE_ROOT = resolve(import.meta.dirname, "..")
 const LOCK_PATH = join(PACKAGE_ROOT, "upstream-lock.json")
 const MANAGED_ROOTS = [
   "references",
-  "vendor/impeccable/skill/agents",
-  "vendor/impeccable/skill/scripts",
+  "vendor/impeccable/skill",
   "vendor/impeccable/cli",
 ]
 
@@ -45,19 +45,10 @@ export function filterImpeccableFiles(tree) {
 }
 
 export function localPathForUpstream(path) {
-  if (path === "skill/SKILL.src.md") return "references/SKILL.md"
+  if (path === "skill/SKILL.src.md") return "vendor/impeccable/skill/SKILL.md"
   if (path === "LICENSE") return "vendor/impeccable/LICENSE"
-  if (path.startsWith("skill/reference/")) {
-    return `references/${path.slice("skill/reference/".length)}`
-  }
-  if (path.startsWith("skill/agents/")) {
-    return `vendor/impeccable/skill/agents/${path.slice("skill/agents/".length)}`
-  }
-  if (path.startsWith("skill/scripts/")) {
-    return `vendor/impeccable/skill/scripts/${path.slice("skill/scripts/".length)}`
-  }
-  if (path.startsWith("cli/")) {
-    return `vendor/impeccable/cli/${path.slice("cli/".length)}`
+  if (path.startsWith("skill/reference/") || path.startsWith("skill/agents/") || path.startsWith("skill/scripts/")) {
+    return `vendor/impeccable/${path}`
   }
   return null
 }
@@ -90,6 +81,9 @@ async function fetchJson(url) {
     headers: {
       Accept: "application/vnd.github+json",
       "User-Agent": "opencode-impeccable-sync",
+      ...((process.env.GITHUB_TOKEN || process.env.GH_TOKEN)
+        ? { Authorization: `Bearer ${process.env.GITHUB_TOKEN || process.env.GH_TOKEN}` }
+        : {}),
     },
   })
   if (!response.ok) throw new Error(`Failed to fetch ${url}: ${response.status} ${response.statusText}`)
@@ -109,13 +103,16 @@ async function resolveLatestLock(current) {
   const commit = await fetchJson(commitUrl())
   const sha = commit.sha
   const builtSkill = await fetchText(rawUrl(".agents/skills/impeccable/SKILL.md", sha))
-  const version = builtSkill.match(/^version:\s*(.+)$/m)?.[1]?.trim()
+  const engineVersion = (await fetchText(rawUrl("ENGINE_VERSION", sha))).trim()
+  const version = builtSkill.match(/^\s*version:\s*(.+)$/m)?.[1]?.trim()
   if (!sha || !version) throw new Error("Unable to resolve upstream commit or skill version")
   return {
     ...current,
     commit: sha,
     committedAt: commit.commit?.committer?.date ?? commit.commit?.author?.date ?? null,
     skillVersion: version,
+    engineVersion,
+    paths: { skill: "skill/SKILL.src.md", agents: "skill/agents", references: "skill/reference", scripts: "skill/scripts" },
   }
 }
 
@@ -188,6 +185,7 @@ async function writeAll(contents) {
     const target = join(PACKAGE_ROOT, local)
     await mkdir(dirname(target), { recursive: true })
     await writeFile(target, body, "utf8")
+    if (local.endsWith("/scripts/impeccable")) await chmod(target, 0o755)
   }))
 }
 
@@ -217,6 +215,12 @@ async function sync() {
   const report = compare(files, upstream, local, stale)
   await writeAll(upstream)
   await prune(stale)
+  const manifestPath = join(PACKAGE_ROOT, "package.json")
+  const manifest = JSON.parse(await readFile(manifestPath, "utf8"))
+  for (const name of Object.keys(manifest.optionalDependencies ?? {})) {
+    if (name.startsWith("@impeccable/cli-")) manifest.optionalDependencies[name] = lock.engineVersion
+  }
+  await writeFile(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`, "utf8")
   await writeFile(LOCK_PATH, `${JSON.stringify(lock, null, 2)}\n`, "utf8")
   printReport(`Synced ${REPO}@${lock.commit}`, report)
 }
@@ -230,6 +234,11 @@ async function check() {
   const local = await readLocal(files)
   const report = compare(files, upstream, local, stale)
   printReport(`Checked ${REPO}@${lock.commit}`, report)
+  const manifest = JSON.parse(await readFile(join(PACKAGE_ROOT, "package.json"), "utf8"))
+  const versions = Object.entries(manifest.optionalDependencies ?? {}).filter(([name]) => name.startsWith("@impeccable/cli-"))
+  if (versions.length !== 5 || versions.some(([, version]) => version !== lock.engineVersion)) {
+    throw new Error("Native engine dependencies do not match upstream-lock.json")
+  }
   if (report.missing.length || report.changed.length || report.stale.length) process.exitCode = 1
 }
 

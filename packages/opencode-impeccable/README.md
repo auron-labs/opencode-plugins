@@ -1,13 +1,13 @@
 # @auron-labs/opencode-impeccable
 
-A self-contained OpenCode port of [pbakaus/impeccable](https://github.com/pbakaus/impeccable). It provides the `/impeccable` menu, 23 implementation commands, typed workflow tools, and automatic design checks after edits.
+A self-contained OpenCode port of [pbakaus/impeccable](https://github.com/pbakaus/impeccable). It provides the `/impeccable` menu, 24 implementation commands, typed workflow tools, and automatic design checks after edits.
 
-The plugin vendors a version-locked upstream snapshot. It does not install or invoke a separate `impeccable` executable, and its hidden primary implementation agent inherits the user's OpenCode permissions instead of forcing read-only access.
+The plugin vendors a version-locked upstream snapshot. It runs upstream’s native Rust engine from a platform-specific optional dependency. Its hidden primary implementation agent inherits the user's OpenCode permissions instead of forcing read-only access.
 
 ## Install
 
 ```bash
-opencode plugin @auron-labs/opencode-impeccable [--global]
+bun add @auron-labs/opencode-impeccable
 ```
 
 Add the plugin to OpenCode's configuration if your installation does not do so automatically:
@@ -18,12 +18,22 @@ Add the plugin to OpenCode's configuration if your installation does not do so a
 }
 ```
 
-Restart OpenCode after changing plugin configuration.
+OpenCode v2 uses:
+
+```json
+{
+  "plugins": ["@auron-labs/opencode-impeccable"]
+}
+```
+
+Both versions load the same package. Restart OpenCode after changing plugin configuration.
 
 ## Requirements
 
-- OpenCode with plugin support.
-- Node.js 22.18 or newer, matching the locked upstream runtime. The bundled JavaScript is launched directly by the plugin.
+- OpenCode v1 1.18.29 or newer, or OpenCode v2.
+- Keep optional dependencies enabled so the native engine installs for Linux/macOS (x64 or arm64), or Windows (x64). On other platforms, provide a compatible Rust engine with `binary` or `IMPECCABLE_BIN`.
+
+The Impeccable engine runs directly without Node or `npx`; the plugin itself uses OpenCode’s JavaScript runtime.
 
 No standalone Impeccable CLI installation is required.
 
@@ -39,14 +49,14 @@ No standalone Impeccable CLI installation is required.
 /impeccable-onboard     /impeccable-animate     /impeccable-colorize
 /impeccable-typeset     /impeccable-layout      /impeccable-delight
 /impeccable-overdrive   /impeccable-clarify     /impeccable-adapt
-/impeccable-optimize    /impeccable-live
+/impeccable-optimize    /impeccable-live        /impeccable-generate
 ```
 
 Each command runs through a hidden, capable primary Impeccable agent. Four upstream specialist agents—asset production, finish review, design-system documentation, and live copy-edit application—are also registered as subagents for the playbooks that require independent handoffs. These agents use the permissions already configured by the user; the plugin does not force a read-only policy or inspect global OpenCode configuration to second-guess those permissions.
 
 ## Native tools
 
-The plugin exposes 29 typed tools so upstream playbooks never need `npx impeccable` or raw `node .../scripts` commands. They cover:
+The plugin exposes 35 typed tools so upstream playbooks never need `npx impeccable` or raw `node .../scripts` commands. They cover:
 
 - reference and project context loading;
 - detection, doctor, CSP, and ignore workflows;
@@ -57,7 +67,7 @@ The plugin exposes 29 typed tools so upstream playbooks never need `npx impeccab
 
 Install, update, and version-check tools are intentionally absent. Updating the OpenCode plugin updates its coherent runtime snapshot.
 
-Filesystem-bearing `impeccable_*` arguments are confined to the active worktree: absolute paths, `../` traversal, and symlink escapes outside it are rejected before any bundled script runs. Detector and critique-storage targets also accept `http:`/`https:` URLs where documented. For intentional operations on external paths, use OpenCode's own permission-aware file tools instead.
+Filesystem-bearing `impeccable_*` arguments are confined to the active worktree: absolute paths, `../` traversal, and symlink escapes outside it are rejected before any Rust engine runs. Detector and critique-storage targets also accept `http:`/`https:` URLs where documented. For intentional operations on external paths, use OpenCode's own permission-aware file tools instead.
 
 ## Post-edit detector
 
@@ -67,28 +77,29 @@ The hook is fail-open: runtime failures never turn a successful edit into a fail
 
 ## Options
 
-The plugin normally needs no options. A custom Node executable can be supplied when necessary:
+The plugin normally needs no options. A custom native Rust engine executable can be supplied when necessary (OpenCode v1):
 
 ```json
 {
   "plugin": [
     ["@auron-labs/opencode-impeccable", {
-      "nodePath": "/absolute/path/to/node"
+      "binary": "/absolute/path/to/impeccable"
     }]
   ]
 }
 ```
 
-`IMPECCABLE_NODE` is also honored when `nodePath` is not set.
+For v2, use `"plugins": [{ "package": "@auron-labs/opencode-impeccable", "options": { "binary": "/absolute/path/to/impeccable" } }]`. `IMPECCABLE_BIN` is honored when `binary` is unset. The former `nodePath` / `IMPECCABLE_NODE` options no longer apply.
 
 ## Upstream snapshot
 
-[`upstream-lock.json`](./upstream-lock.json) records the exact Impeccable commit and skill version used by the package. The snapshot includes the upstream skill source, references, runtime scripts, CLI engine modules, and Apache license under `references/` and `vendor/impeccable/`.
+[`upstream-lock.json`](./upstream-lock.json) records the exact Impeccable commit, skill version, and native engine version used by the package. The snapshot includes the upstream skill source, references, launcher, browser assets, and Apache license under `vendor/impeccable/`. The engine is supplied by pinned `@impeccable/cli-*` optional dependencies.
 
 From this package directory:
 
 ```bash
-bun run sync        # update all managed files and the lock to upstream main
+bun run sync        # update managed files, native dependency versions, and snapshot lock
+bun install         # update the workspace dependency lockfile after syncing
 bun run sync:check  # compare all managed files with the immutable locked commit
 ```
 

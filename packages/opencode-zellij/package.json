@@ -28,7 +28,8 @@
     "access": "public"
   },
   "dependencies": {
-    "@opencode-ai/plugin": "^1.17.15"
+    "@opencode-ai/plugin": "^1.17.15",
+    "@opencode/plugin": "^2.0.3"
   },
   "devDependencies": {
     "@types/node": "^26.1.1",
@@ -49,5 +50,7 @@
   "bugs": {
     "url": "https://github.com/auron-labs/opencode-plugins/issues"
   },
-  "homepage": "https://github.com/auron-labs/opencode-plugins/tree/main/packages/opencode-zellij"
+  "homepage": "https://github.com/auron-labs/opencode-plugins/tree/main/packages/opencode-zellij",
+  "deprecated": "Deprecated: this plugin is no longer maintained and will not receive OpenCode v2 support.",
+  "private": true
 }

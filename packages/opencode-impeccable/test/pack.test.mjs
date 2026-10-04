@@ -12,18 +12,19 @@ const CHECKER = join(import.meta.dirname, "..", "scripts", "check-package-conten
 const REQUIRED = [
   "dist/index.js",
   "dist/index.d.ts",
-  "references/SKILL.md",
+  "vendor/impeccable/skill/SKILL.md",
   "upstream-lock.json",
   "vendor/impeccable/LICENSE",
   "vendor/impeccable/skill/agents/impeccable-asset-producer.md",
-  "vendor/impeccable/skill/scripts/context.mjs",
-  "vendor/impeccable/skill/scripts/hook.mjs",
-  "vendor/impeccable/skill/scripts/live.mjs",
-  "vendor/impeccable/cli/bin/cli.js",
-  "vendor/impeccable/cli/bin/commands/ignores.mjs",
+  "vendor/impeccable/skill/reference/ios.md",
+  "vendor/impeccable/skill/scripts/impeccable",
+  "vendor/impeccable/skill/scripts/impeccable.cmd",
+  "vendor/impeccable/skill/scripts/VERSION",
+  "vendor/impeccable/skill/scripts/command-metadata.json",
+  "vendor/impeccable/skill/scripts/live-browser.js",
 ]
 
-async function fixture(omitted = [], packRoots = ["dist", "references", "vendor", "upstream-lock.json"]) {
+async function fixture(omitted = [], packRoots = ["dist", "vendor", "upstream-lock.json"]) {
   const root = await mkdtemp(join(tmpdir(), "impeccable-pack-"))
   await writeFile(join(root, "package.json"), JSON.stringify({
     name: "impeccable-pack-fixture",
@@ -65,11 +66,11 @@ test("pack checker fails naming an omitted required file", async () => {
 })
 
 test("pack checker fails naming a dropped reference file", async () => {
-  const root = await fixture([], ["dist", "vendor", "upstream-lock.json"])
+  const root = await fixture([], ["dist", "upstream-lock.json"])
   try {
-    await writeFile(join(root, "references", "extra.md"), "content\n")
+    await writeFile(join(root, "vendor", "impeccable", "skill", "reference", "extra.md"), "content\n")
     await assert.rejects(() => runChecker(root), (error) => {
-      assert.match(error.stdout, /references\/extra\.md/)
+      assert.match(error.stdout, /reference\/extra\.md/)
       return true
     })
   } finally {

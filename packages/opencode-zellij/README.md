@@ -1,5 +1,7 @@
 # @auron-labs/opencode-zellij
 
+> Deprecated. This plugin is no longer maintained and will not receive OpenCode v2 support. Existing releases remain available for legacy use.
+
 OpenCode plugin for managing Zellij terminal panes. Spawn, read, watch, and control Zellij panes from agent tools with event subscriptions and automatic cleanup.
 
 ## Install
