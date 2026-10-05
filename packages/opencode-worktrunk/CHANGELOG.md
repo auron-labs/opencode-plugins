@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.0](https://github.com/auron-labs/opencode-plugins/compare/@auron-labs/opencode-worktrunk-v0.2.0...@auron-labs/opencode-worktrunk-v0.3.0) (2026-10-05)
+
+
+### Features
+
+* support OpenCode v2 and migrate Impeccable to Rust ([be153a1](https://github.com/auron-labs/opencode-plugins/commit/be153a12f1a3d4d4d28913507775dd889d98bf96))
+
 ## [0.2.0](https://github.com/auron-labs/opencode-plugins/compare/@auron-labs/opencode-worktrunk-v0.1.0...@auron-labs/opencode-worktrunk-v0.2.0) (2026-08-03)
 
 

@@ -1,6 +1,6 @@
 {
   "name": "@auron-labs/opencode-impeccable",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "description": "OpenCode v1/v2 port of Impeccable with typed workflow tools and the native Rust design engine.",
   "license": "MIT",
   "type": "module",
