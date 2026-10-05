@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.6.0](https://github.com/auron-labs/opencode-plugins/compare/@auron-labs/opencode-improve-v0.5.0...@auron-labs/opencode-improve-v0.6.0) (2026-10-05)
+
+
+### Features
+
+* add proper routing to opencode-improve ([d178f2c](https://github.com/auron-labs/opencode-plugins/commit/d178f2cce72f3bbeb21771c59d31670f7c12774f))
+* support OpenCode v2 and migrate Impeccable to Rust ([be153a1](https://github.com/auron-labs/opencode-plugins/commit/be153a12f1a3d4d4d28913507775dd889d98bf96))
+
 ## [0.5.0](https://github.com/auron-labs/opencode-plugins/compare/@auron-labs/opencode-improve-v0.4.0...@auron-labs/opencode-improve-v0.5.0) (2026-08-18)
 
 
