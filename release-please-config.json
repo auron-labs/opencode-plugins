@@ -4,6 +4,11 @@
   "include-v-in-tag": true,
   "include-component-in-tag": true,
   "packages": {
+    "packages/opencode-gortex": {
+      "component": "@auron-labs/opencode-gortex",
+      "changelog-path": "CHANGELOG.md",
+      "release-type": "node"
+    },
     "packages/opencode-impeccable": {
       "component": "@auron-labs/opencode-impeccable",
       "changelog-path": "CHANGELOG.md",

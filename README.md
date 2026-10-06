@@ -4,13 +4,14 @@
 
 [![License](https://img.shields.io/github/license/auron-labs/opencode-plugins?style=flat-square)](./LICENSE) [![CI](https://img.shields.io/github/actions/workflow/status/auron-labs/opencode-plugins/ci.yaml?branch=main&style=flat-square&label=ci)](https://github.com/auron-labs/opencode-plugins/actions/workflows/ci.yaml) [![Release](https://img.shields.io/github/actions/workflow/status/auron-labs/opencode-plugins/release.yaml?branch=main&style=flat-square&label=release)](https://github.com/auron-labs/opencode-plugins/actions/workflows/release.yaml)
 
-OpenCode plugin workspace for design workflows, audit planning, git worktree management, and temporary shell workspaces. Bashkit supports OpenCode v2 only on Linux x64 glibc; the other maintained packages support v1 (1.18.29+) and v2 from the same package.
+OpenCode plugin workspace for design workflows, audit planning, code intelligence, git worktree management, and temporary shell workspaces. Gortex supports OpenCode v2 only. Bashkit supports OpenCode v2 only on Linux x64 glibc; the other maintained packages support v1 (1.18.29+) and v2 from the same package.
 
 ## Packages
 
 | Package | Use it for | Install |
 | --- | --- | --- |
 | [@auron-labs/opencode-bashkit](./packages/opencode-bashkit) | OpenCode v2 shell backed by a temporary Bashkit copy-on-write workspace | `bun add @auron-labs/opencode-bashkit` |
+| [@auron-labs/opencode-gortex](./packages/opencode-gortex) | OpenCode v2 Gortex MCP integration with project tracking and opt-in skills and community routing. | `bun add @auron-labs/opencode-gortex` |
 | [@auron-labs/opencode-impeccable](./packages/opencode-impeccable) | OpenCode v1/v2 port of Impeccable with typed workflow tools and the native Rust design engine. | `bun add @auron-labs/opencode-impeccable` |
 | [@auron-labs/opencode-improve](./packages/opencode-improve) | OpenCode plugin that injects an improve agent for auditing codebases and writing self-contained implementation plans. | `bun add @auron-labs/opencode-improve` |
 | [@auron-labs/opencode-worktrunk](./packages/opencode-worktrunk) | OpenCode plugin that wraps the Worktrunk CLI (`wt`) for git worktree management — list, switch/create, remove, merge, step, and arbitrary `wt` passthrough. | `bun add @auron-labs/opencode-worktrunk` |
@@ -29,6 +30,7 @@ Some plugins also expect local tools on `PATH`:
 
 - `@auron-labs/opencode-impeccable` installs the native Rust engine through platform-specific optional dependencies; keep optional dependencies enabled.
 - `@auron-labs/opencode-worktrunk` expects the `wt` (Worktrunk) CLI on `PATH` unless you configure a custom binary path.
+- `@auron-labs/opencode-gortex` requires the `gortex` CLI; it searches `PATH` and standard installation locations automatically.
 
 ## Quick Start
 
@@ -52,6 +54,7 @@ Package-specific configuration, requirements, and examples live in each package 
 
 - [@auron-labs/opencode-bashkit](./packages/opencode-bashkit)
 - [@auron-labs/opencode-codebase-memory](./packages/opencode-codebase-memory)
+- [@auron-labs/opencode-gortex](./packages/opencode-gortex)
 - [@auron-labs/opencode-impeccable](./packages/opencode-impeccable)
 - [@auron-labs/opencode-improve](./packages/opencode-improve)
 - [@auron-labs/opencode-omniroute-auth](./packages/opencode-omniroute-auth)

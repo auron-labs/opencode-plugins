@@ -10,6 +10,7 @@ on:
         required: true
         type: choice
         options:
+          - packages/opencode-gortex
           - packages/opencode-impeccable
           - packages/opencode-improve
           - packages/opencode-worktrunk
