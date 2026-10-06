@@ -1,5 +1,6 @@
 [tools]
 bun = "1.2.23"
+node = "24"
 rust = "1.99.0"
 
 [tasks.lint]
