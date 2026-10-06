@@ -34,7 +34,7 @@ readme += '# opencode-plugins\n\n';
 readme += '[![License](https://img.shields.io/github/license/auron-labs/opencode-plugins?style=flat-square)](./LICENSE) ';
 readme += `[![CI](https://img.shields.io/github/actions/workflow/status/auron-labs/opencode-plugins/ci.yaml?branch=main&style=flat-square&label=ci)](${repo}/actions/workflows/ci.yaml) `;
 readme += `[![Release](https://img.shields.io/github/actions/workflow/status/auron-labs/opencode-plugins/release.yaml?branch=main&style=flat-square&label=release)](${repo}/actions/workflows/release.yaml)\n\n`;
-readme += 'OpenCode plugin workspace for design workflows, audit planning, and git worktree management. Maintained packages support OpenCode v1 (1.18.29+) and v2 from the same package.\n\n';
+readme += 'OpenCode plugin workspace for design workflows, audit planning, git worktree management, and temporary shell workspaces. Bashkit supports OpenCode v2 only on Linux x64 glibc; the other maintained packages support v1 (1.18.29+) and v2 from the same package.\n\n';
 readme += '## Packages\n\n';
 readme += '| Package | Use it for | Install |\n';
 readme += '| --- | --- | --- |\n';

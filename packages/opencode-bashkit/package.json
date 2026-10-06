@@ -1,0 +1,58 @@
+{
+  "name": "@auron-labs/opencode-bashkit",
+  "version": "0.1.0",
+  "license": "MIT",
+  "type": "module",
+  "files": [
+    "dist",
+    "README.md",
+    "CHANGELOG.md"
+  ],
+  "os": [
+    "linux"
+  ],
+  "cpu": [
+    "x64"
+  ],
+  "libc": [
+    "glibc"
+  ],
+  "scripts": {
+    "build": "node scripts/build-native.mjs && tsc",
+    "test": "bun run build && cargo test --manifest-path native/Cargo.toml --locked && node test/runtime.test.mjs && bun test/bun-runtime.mjs && node test/plugin.test.mjs && node test/pack.test.mjs",
+    "smoke:opencode": "node test/opencode-smoke.mjs"
+  },
+  "packageManager": "bun@1.2.23",
+  "keywords": [
+    "opencode",
+    "plugin",
+    "bashkit",
+    "virtual-filesystem"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/auron-labs/opencode-plugins.git",
+    "directory": "packages/opencode-bashkit"
+  },
+  "dependencies": {
+    "@opencode/plugin": "2.0.22",
+    "@opencode/core": "2.0.22",
+    "effect": "4.0.0-rc.112"
+  },
+  "devDependencies": {
+    "@types/node": "^26.2.0",
+    "typescript": "^7.0.2"
+  },
+  "description": "OpenCode v2 shell backed by a temporary Bashkit copy-on-write workspace",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}

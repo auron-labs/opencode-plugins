@@ -1,0 +1,20 @@
+[package]
+name = "opencode-bashkit-native"
+version = "0.1.0"
+edition = "2024"
+publish = false
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+bashkit = { version = "=0.17.1", default-features = false, features = ["realfs"] }
+napi = { version = "3", default-features = false, features = ["napi8", "tokio_rt", "dyn-symbols"] }
+napi-derive = "3"
+tokio = { version = "1", features = ["rt-multi-thread", "sync", "time"] }
+
+[build-dependencies]
+napi-build = "2"
+
+[dev-dependencies]
+tempfile = "3"

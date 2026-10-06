@@ -23,6 +23,8 @@ jobs:
         with:
           bun-version: 1.2.23
 
+      - uses: dtolnay/rust-toolchain@1.99.0
+
       - name: Cache Bun dependencies
         uses: actions/cache@v4
         with:

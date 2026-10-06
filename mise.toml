@@ -1,5 +1,6 @@
 [tools]
 bun = "1.2.23"
+rust = "1.99.0"
 
 [tasks.lint]
 description = "Run zero-config source lint"

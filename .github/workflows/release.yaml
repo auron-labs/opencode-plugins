@@ -13,6 +13,7 @@ on:
           - packages/opencode-impeccable
           - packages/opencode-improve
           - packages/opencode-worktrunk
+          - packages/opencode-bashkit
 
 permissions:
   contents: write
@@ -60,6 +61,9 @@ jobs:
       - uses: oven-sh/setup-bun@v2
         with:
           bun-version: 1.2.23
+
+      - uses: dtolnay/rust-toolchain@1.99.0
+        if: ${{ matrix.package == 'packages/opencode-bashkit' }}
 
       - name: Cache Bun dependencies
         uses: actions/cache@v4
@@ -119,6 +123,9 @@ jobs:
       - uses: oven-sh/setup-bun@v2
         with:
           bun-version: 1.2.23
+
+      - uses: dtolnay/rust-toolchain@1.99.0
+        if: ${{ inputs.package == 'packages/opencode-bashkit' }}
 
       - name: Cache Bun dependencies
         uses: actions/cache@v4
