@@ -48,11 +48,13 @@ Before running any Gortex command, the plugin resolves symlinks and validates th
 
 Home, its ancestors, filesystem root, broad top-level folders, system directories, and private directories such as `.ssh`, `.aws`, and `.config` are rejected even if they contain project markers. Symlinks to those directories are also rejected. `.gortex/` and `.opencode/` alone never qualify a folder as a project. Rejection stops startup before CLI calls, project writes, skills, routing, or MCP registration.
 
-For an accepted project, the plugin runs `gortex version`, creates the `.gortex/` marker with a self-scoping `.gitignore`, and runs the idempotent `gortex track <directory>`. Tracking and MCP use the same validated canonical path. Tracking updates Gortex's user-level workspace and may auto-start its shared daemon. Indexing can continue in the background; agents must check graph readiness.
+For an accepted project, the plugin runs `gortex version`, creates the `.gortex/` marker with a self-scoping `.gitignore`, runs the idempotent `gortex track <directory>`, and reads `gortex repos --json` to find its registered repo name. Tracking and MCP use the same validated canonical path. Tracking updates Gortex's user-level workspace and may auto-start its shared daemon. Indexing can continue in the background; agents must check graph readiness.
 
 These checks govern what this plugin starts or registers. They do not remove repositories already tracked in Gortex's shared workspace or change an existing user-configured MCP server. A previously tracked home directory needs separate cleanup before starting that daemon.
 
 MCP registration uses the v2 API with `gortex mcp --index <directory>` and the current directory as its working directory. An existing `gortex` MCP entry, including a disabled entry, is preserved.
+
+Local `gortex` MCP calls automatically prefix relative file-path arguments with the opened project's registered repo name. For example, `target.file: "mise.toml"` becomes `"printwell-php/mise.toml"` when that is the registered name, even if other tracked repos contain `mise.toml`. This also covers path filters, file lists, and batch edit/move/delete paths. Absolute paths, known repo-prefixed paths, explicit repo/project/workspace/scope or view selections, symbol selectors, and free-text queries or file contents are unchanged. Remote MCP entries and repository administration calls are not rewritten. This workaround is enabled by default and has no additional option.
 
 Skill installation runs `gortex install` for the OpenCode adapter in a temporary home and copies only its `SKILL.md` files into the project. Hooks, commands, machine-wide OpenCode configuration and telemetry changes from that setup remain in the temporary directory, which is removed afterward. CLI setup requires support for `--agents`, `--no-hooks`, `--no-claude-md`, `--no-telemetry`, and `--json`.
 
