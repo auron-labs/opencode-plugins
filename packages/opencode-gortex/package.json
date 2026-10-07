@@ -1,6 +1,6 @@
 {
   "name": "@auron-labs/opencode-gortex",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "OpenCode v2 Gortex MCP integration with project tracking and opt-in skills and community routing.",
   "license": "MIT",
   "type": "module",
