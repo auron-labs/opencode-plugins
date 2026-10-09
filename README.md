@@ -11,6 +11,7 @@ OpenCode plugin workspace for design workflows, audit planning, code intelligenc
 | Package | Use it for | Install |
 | --- | --- | --- |
 | [@auron-labs/opencode-bashkit](./packages/opencode-bashkit) | OpenCode v2 shell backed by a temporary Bashkit copy-on-write workspace | `bun add @auron-labs/opencode-bashkit` |
+| [@auron-labs/opencode-codebase-memory](./packages/opencode-codebase-memory) | OpenCode plugin integrating codebase-memory-mcp with safe startup indexing and project tools. | `bun add @auron-labs/opencode-codebase-memory` |
 | [@auron-labs/opencode-gortex](./packages/opencode-gortex) | OpenCode v2 Gortex MCP integration with project tracking and opt-in skills and community routing. | `bun add @auron-labs/opencode-gortex` |
 | [@auron-labs/opencode-impeccable](./packages/opencode-impeccable) | OpenCode v1/v2 port of Impeccable with typed workflow tools and the native Rust design engine. | `bun add @auron-labs/opencode-impeccable` |
 | [@auron-labs/opencode-improve](./packages/opencode-improve) | OpenCode plugin that injects an improve agent for auditing codebases and writing self-contained implementation plans. | `bun add @auron-labs/opencode-improve` |
@@ -20,7 +21,6 @@ OpenCode plugin workspace for design workflows, audit planning, code intelligenc
 
 These packages are no longer maintained and will not receive OpenCode v2 support. Existing releases remain available for legacy use.
 
-- [@auron-labs/opencode-codebase-memory](./packages/opencode-codebase-memory)
 - [@auron-labs/opencode-omniroute-auth](./packages/opencode-omniroute-auth)
 - [@auron-labs/opencode-zellij](./packages/opencode-zellij)
 

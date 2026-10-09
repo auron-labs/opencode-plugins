@@ -1,7 +1,7 @@
 {
   "name": "@auron-labs/opencode-codebase-memory",
   "version": "0.3.0",
-  "description": "OpenCode plugin for codebase-memory-mcp with startup indexing for the active project.",
+  "description": "OpenCode plugin integrating codebase-memory-mcp with safe startup indexing and project tools.",
   "license": "MIT",
   "type": "module",
   "sideEffects": false,
@@ -49,7 +49,5 @@
   "bugs": {
     "url": "https://github.com/auron-labs/opencode-plugins/issues"
   },
-  "homepage": "https://github.com/auron-labs/opencode-plugins/tree/main/packages/opencode-codebase-memory",
-  "deprecated": "Deprecated: this plugin is no longer maintained and will not receive OpenCode v2 support.",
-  "private": true
+  "homepage": "https://github.com/auron-labs/opencode-plugins/tree/main/packages/opencode-codebase-memory"
 }
