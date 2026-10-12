@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.4.0](https://github.com/auron-labs/opencode-plugins/compare/@auron-labs/opencode-codebase-memory-v0.3.0...@auron-labs/opencode-codebase-memory-v0.4.0) (2026-10-12)
+
+
+### Features
+
+* support OpenCode v2 and migrate Impeccable to Rust ([be153a1](https://github.com/auron-labs/opencode-plugins/commit/be153a12f1a3d4d4d28913507775dd889d98bf96))
+* update codebase memory ([847f6d3](https://github.com/auron-labs/opencode-plugins/commit/847f6d3820891c0c63d2a5554d7f7796b97e138f))
+
 ## [0.3.0](https://github.com/auron-labs/opencode-plugins/compare/@auron-labs/opencode-codebase-memory-v0.2.1...@auron-labs/opencode-codebase-memory-v0.3.0) (2026-08-15)
 
 

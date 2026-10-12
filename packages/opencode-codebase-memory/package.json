@@ -1,6 +1,6 @@
 {
   "name": "@auron-labs/opencode-codebase-memory",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "OpenCode plugin integrating codebase-memory-mcp with safe startup indexing and project tools.",
   "license": "MIT",
   "type": "module",
