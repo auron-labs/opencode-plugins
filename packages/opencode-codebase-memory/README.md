@@ -2,11 +2,24 @@
 
 An OpenCode plugin that connects the active project to the upstream `codebase-memory-mcp` MCP server and provides project status and indexing tools.
 
-> **Release status:** The current workspace implementation is streamlined and not included in published version `0.3.0`. Build and load the local package below to use these changes; the version number is intentionally unchanged.
-
-## Use the current workspace version
+## Install
 
 The upstream `codebase-memory-mcp` executable must be installed separately and available on `PATH`, or supplied with the `binary` option. The plugin does not install it or run its installer.
+
+The streamlined integration described below requires plugin version `0.4.0` or newer and supports OpenCode v1 and v2. For OpenCode v2, add the package to your `plugins` list:
+
+```json
+{
+  "plugins": [
+    {
+      "package": "@auron-labs/opencode-codebase-memory@latest",
+      "options": {}
+    }
+  ]
+}
+```
+
+## Use the local workspace version
 
 From the workspace root, build the package:
 
@@ -14,7 +27,7 @@ From the workspace root, build the package:
 bun run --filter @auron-labs/opencode-codebase-memory build
 ```
 
-The current workspace entrypoint supports OpenCode v1 and v2; add the built package path to an OpenCode v2 `plugins` list as follows:
+Add the built package path to an OpenCode v2 `plugins` list as follows:
 
 ```json
 {
@@ -42,7 +55,7 @@ The plugin does not write OpenCode config files, agent instructions, project doc
 ## Options
 
 | Option | Type | Default | Description |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | `binary` | string | `codebase-memory-mcp` | Executable name or path for the upstream CLI and MCP server. |
 | `enabled` | boolean | `true` | Enable MCP registration and startup indexing. |
 | `indexOnStartup` | boolean | `true` | Check and index the active project on startup if it is not already indexed. |

@@ -28,7 +28,7 @@
     },
     "packages/opencode-codebase-memory": {
       "name": "@auron-labs/opencode-codebase-memory",
-      "version": "0.3.0",
+      "version": "0.4.0",
       "dependencies": {
         "@opencode-ai/plugin": "^1.17.15",
         "@opencode/plugin": "^2.0.3",
