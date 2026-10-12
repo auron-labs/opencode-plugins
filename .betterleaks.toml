@@ -1,0 +1,12 @@
+[extend]
+useDefault = true
+
+# Limit the exemption to passwords used as test fixtures; other secret rules
+# continue to scan these files.
+[[allowlists]]
+targetRules = ["generic-password"]
+paths = [
+  "^tests/",
+  '\.(?:test|spec)\.(?:js|jsx|ts|tsx|mjs|cjs|mts|cts)$',
+  "(?:^|/)__tests__/",
+]

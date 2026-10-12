@@ -21,9 +21,6 @@ OpenCode plugin workspace for design workflows, audit planning, code intelligenc
 
 These packages are no longer maintained and will not receive OpenCode v2 support. Existing releases remain available for legacy use.
 
-- [@auron-labs/opencode-omniroute-auth](./packages/opencode-omniroute-auth)
-- [@auron-labs/opencode-zellij](./packages/opencode-zellij)
-
 Each package is published to npm and can also be installed with `npm install <package>` if you are not using Bun.
 
 Some plugins also expect local tools on `PATH`:
@@ -57,9 +54,7 @@ Package-specific configuration, requirements, and examples live in each package 
 - [@auron-labs/opencode-gortex](./packages/opencode-gortex)
 - [@auron-labs/opencode-impeccable](./packages/opencode-impeccable)
 - [@auron-labs/opencode-improve](./packages/opencode-improve)
-- [@auron-labs/opencode-omniroute-auth](./packages/opencode-omniroute-auth)
 - [@auron-labs/opencode-worktrunk](./packages/opencode-worktrunk)
-- [@auron-labs/opencode-zellij](./packages/opencode-zellij)
 
 ## Troubleshooting
 

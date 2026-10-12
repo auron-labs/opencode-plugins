@@ -1,0 +1,57 @@
+amends "package://github.com/jdx/hk/releases/download/v2.0.1/hk@2.0.1#/Config.pkl"
+
+import "package://github.com/jdx/hk/releases/download/v2.0.1/hk@2.0.1#/Builtins.pkl"
+
+local linters = new Mapping<String, Step> {
+  ["betterleaks"] = Builtins.betterleaks
+  ["byte_order_marker"] = Builtins.byte_order_marker
+  ["check_added_large_files"] = Builtins.check_added_large_files
+  ["check_case_conflict"] = Builtins.check_case_conflict
+  ["check_executables_have_shebangs"] = Builtins.check_executables_have_shebangs
+  ["check_merge_conflict"] = Builtins.check_merge_conflict
+  ["check_symlinks"] = Builtins.check_symlinks
+  ["detect_private_key"] = Builtins.detect_private_key
+  ["fix_smart_quotes"] = Builtins.fix_smart_quotes
+  ["knip"] = Builtins.knip
+  ["mixed_line_ending"] = Builtins.mixed_line_ending
+  ["newlines"] = Builtins.newlines
+  ["oxfmt"] = (Builtins.oxfmt) {
+    prefix = List("bun", "run", "--")
+  }
+  ["ox_lint"] = (Builtins.ox_lint) {
+    prefix = List("bun", "run", "--")
+  }
+  ["pinact_update"] = Builtins.pinact_update
+  ["pkl_format"] = Builtins.pkl_format
+  ["shellcheck"] = Builtins.shellcheck
+  ["shfmt"] = Builtins.shfmt
+  ["sort_package_json"] = Builtins.sort_package_json
+  ["tombi_format"] = Builtins.tombi_format
+  ["trailing_whitespace"] = Builtins.trailing_whitespace
+  ["zizmor"] = Builtins.zizmor
+}
+
+hooks {
+  ["pre-commit"] {
+    fix = true
+    stash = "git"
+    steps = linters
+  }
+
+  ["commit-msg"] {
+    steps {
+      ["conventional-commit"] {
+        check = "hk util check-conventional-commit {{commit_msg_file}}"
+      }
+    }
+  }
+
+  ["check"] {
+    steps = linters
+  }
+
+  ["fix"] {
+    fix = true
+    steps = linters
+  }
+}
