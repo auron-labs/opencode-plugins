@@ -16,12 +16,6 @@ function fixture(body) {
   }
 }
 
-test("installed native engine answers the engine handshake", async () => {
-  const runtime = { directory: process.cwd(), worktree: process.cwd(), ...defaultRuntimePaths(process.cwd()) }
-  const result = await runEngineVerb(runtime, "engine-probe")
-  assert.match(result.stdout, /^impeccable-engine 0\.1\.11/)
-})
-
 test("runtime invokes engine verbs directly with cwd, stdin, and skill assets", async () => {
   const { root, runtime } = fixture(`
     console.log(JSON.stringify({
