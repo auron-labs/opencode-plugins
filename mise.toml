@@ -19,9 +19,13 @@ run = "hk check --no-fail-fast"
 description = "run hk fix"
 run = "hk fix --no-fail-fast"
 
+[tasks.build]
+description = "Build all packages"
+run = "bun run --filter '*' build"
+
 [tasks.test]
 description = "Runs all packages tests"
-run = ["bun run --filter '*' test", "bun --test scripts/opencode-smoke.test.mjs scripts/sync-improve-upstream.test.mjs"]
+run = ["bun run --filter '*' test", "node --test scripts/opencode-smoke.test.mjs scripts/sync-improve-upstream.test.mjs"]
 
 [tasks.readme]
 description = "sync the readme with the package list"

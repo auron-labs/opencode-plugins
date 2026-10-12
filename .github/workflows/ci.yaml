@@ -17,35 +17,36 @@ jobs:
   check:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-node@v6
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          node-version: '24'
-          check-latest: true
-          package-manager-cache: false
+          fetch-depth: 0
+          persist-credentials: false
 
-      - uses: oven-sh/setup-bun@v2
+      - uses: jdx/mise-action@2d8d4cafcbd33be2ea37d2b6f5ad595363d1f1ca # v5.1.1
+
+      - uses: dtolnay/rust-toolchain@e2a55d2ffb04f378e9626c28d38b36d230d1e12f # v1
         with:
-          bun-version: 1.2.23
-
-      - uses: dtolnay/rust-toolchain@1.99.0
+          toolchain: 1.99.0
 
       - name: Cache Bun dependencies
-        uses: actions/cache@v4
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: |
             ~/.bun/install/cache
             node_modules
             packages/*/node_modules
-          key: bun-${{ runner.os }}-${{ hashFiles('bun.lock') }}
+          key: bun-${{ runner.os }}-${{ hashFiles('mise.toml', 'bun.lock') }}
           restore-keys: |
             bun-${{ runner.os }}-
 
       - run: bun install --frozen-lockfile
 
-      - run: bun run lint
+      - name: Lint changed files
+        run: mise exec -- hk check --no-fail-fast --from-ref "$BASE_REF" --to-ref HEAD
+        env:
+          BASE_REF: ${{ github.event.pull_request.base.sha || github.event.before }}
+          GITHUB_TOKEN: ${{ github.token }}
 
-      - run: bun run build
+      - run: mise run build
 
-      - run: bun run test
+      - run: mise run test
