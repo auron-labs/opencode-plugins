@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.7.0](https://github.com/auron-labs/opencode-plugins/compare/@auron-labs/opencode-impeccable-v0.6.0...@auron-labs/opencode-impeccable-v0.7.0) (2026-10-12)
+
+
+### Features
+
+* **impeccable:** upgrade to latest impeccable version ([0d833c8](https://github.com/auron-labs/opencode-plugins/commit/0d833c811f86466d8265bbbb8e5b94aadadb8fb1))
+
+
+### Bug Fixes
+
+* **impeccable:** remove hardcoded version check ([8c5d23a](https://github.com/auron-labs/opencode-plugins/commit/8c5d23af66d13f180dc68c1db2d4ecbd89c32940))
+
 ## [0.6.0](https://github.com/auron-labs/opencode-plugins/compare/@auron-labs/opencode-impeccable-v0.5.0...@auron-labs/opencode-impeccable-v0.6.0) (2026-10-05)
 
 
