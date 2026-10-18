@@ -1,0 +1,61 @@
+{
+  "name": "@auron-labs/opencode-pstack",
+  "version": "0.1.0",
+  "description": "OpenCode v2 PStack workflows with native agents, skills, commands, and durable coordination tools.",
+  "keywords": [
+    "opencode",
+    "plugin",
+    "pstack",
+    "agents",
+    "workflow"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/auron-labs/opencode-plugins.git",
+    "directory": "packages/opencode-pstack"
+  },
+  "license": "MIT",
+  "sideEffects": false,
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist",
+    "vendor",
+    "upstream-lock.json",
+    "README.md",
+    "CHANGELOG.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "check:pack": "node scripts/check-package-contents.mjs",
+    "prepublishOnly": "bun run build",
+    "sync": "node scripts/sync-pstack-upstream.mjs",
+    "sync:check": "node scripts/sync-pstack-upstream.mjs check",
+    "test": "bun run build && node --test test/*.test.mjs",
+    "test:integration": "bun run build && node --test test/opencode.integration.mjs"
+  },
+  "dependencies": {
+    "@opencode/plugin": "^2.0.22",
+    "effect": "4.0.0-rc.112",
+    "yaml": "^2.8.1",
+    "zod": "4.1.8"
+  },
+  "devDependencies": {
+    "@copilotkit/aimock": "^1.45.1",
+    "@opencode/core": "^2.0.22",
+    "@types/node": "^26.2.0",
+    "typescript": "^7.0.2"
+  },
+  "packageManager": "bun@1.2.23",
+  "publishConfig": {
+    "access": "public"
+  }
+}

@@ -1,3 +1,11 @@
+# Only the source digest for the Sentry reference is exempt from this rule.
+filter = '''
+finding["rule_id"] == "sentry-access-token" &&
+filter.matchesAny(attributes["path"], ["(^|/)packages/opencode-pstack/upstream-lock[.]json$"]) &&
+filter.containsAny(finding["line"], ["skills/why/references/sources/sentry.md"]) &&
+filter.matchesAny(finding["secret"], ["^[a-f0-9]{64}$"])
+'''
+
 [extend]
 useDefault = true
 

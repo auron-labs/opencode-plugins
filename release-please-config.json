@@ -4,6 +4,11 @@
   "include-v-in-tag": true,
   "include-component-in-tag": true,
   "packages": {
+    "packages/opencode-pstack": {
+      "component": "@auron-labs/opencode-pstack",
+      "changelog-path": "CHANGELOG.md",
+      "release-type": "node"
+    },
     "packages/opencode-codebase-memory": {
       "component": "@auron-labs/opencode-codebase-memory",
       "changelog-path": "CHANGELOG.md",

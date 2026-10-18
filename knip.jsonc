@@ -29,6 +29,10 @@
     "packages/opencode-improve": {
       "project": ["src/**", "test/**"],
     },
+    "packages/opencode-pstack": {
+      "entry": ["test/*.test.mjs", "scripts/*.mjs"],
+      "project": ["src/**", "test/**", "scripts/**"],
+    },
     "packages/opencode-worktrunk": {
       "project": ["src/**", "test/**"],
       "ignoreDependencies": ["zod"],

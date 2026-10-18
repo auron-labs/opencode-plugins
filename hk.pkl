@@ -11,10 +11,16 @@ local linters = new Mapping<String, Step> {
   ["check_merge_conflict"] = Builtins.check_merge_conflict
   ["check_symlinks"] = Builtins.check_symlinks
   ["detect_private_key"] = Builtins.detect_private_key
-  ["fix_smart_quotes"] = Builtins.fix_smart_quotes
+  ["fix_smart_quotes"] = (Builtins.fix_smart_quotes) {
+    exclude = List("packages/**/vendor/**")
+  }
   ["knip"] = Builtins.knip
-  ["mixed_line_ending"] = Builtins.mixed_line_ending
-  ["newlines"] = Builtins.newlines
+  ["mixed_line_ending"] = (Builtins.mixed_line_ending) {
+    exclude = List("packages/**/vendor/**")
+  }
+  ["newlines"] = (Builtins.newlines) {
+    exclude = List("packages/**/vendor/**")
+  }
   ["oxfmt"] = (Builtins.oxfmt) {
     prefix = List("bun", "run", "--")
   }
@@ -27,7 +33,9 @@ local linters = new Mapping<String, Step> {
   ["shfmt"] = Builtins.shfmt
   ["sort_package_json"] = Builtins.sort_package_json
   ["tombi_format"] = Builtins.tombi_format
-  ["trailing_whitespace"] = Builtins.trailing_whitespace
+  ["trailing_whitespace"] = (Builtins.trailing_whitespace) {
+    exclude = List("packages/**/vendor/**")
+  }
   ["zizmor"] = Builtins.zizmor
 }
 
