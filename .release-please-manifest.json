@@ -5,5 +5,5 @@
   "packages/opencode-worktrunk": "0.3.0",
   "packages/opencode-bashkit": "0.2.0",
   "packages/opencode-codebase-memory": "0.4.0",
-  "packages/opencode-pstack": "0.1.0"
+  "packages/opencode-pstack": "0.2.0"
 }
