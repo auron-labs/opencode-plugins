@@ -1,6 +1,6 @@
 {
   "name": "@auron-labs/opencode-pstack",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "OpenCode v2 PStack workflows with native agents, skills, commands, and durable coordination tools.",
   "keywords": [
     "opencode",

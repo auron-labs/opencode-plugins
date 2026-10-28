@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.2.0](https://github.com/auron-labs/opencode-plugins/compare/@auron-labs/opencode-pstack-v0.1.0...@auron-labs/opencode-pstack-v0.2.0) (2026-10-28)
+
+
+### Features
+
+* **pstack:** add opencode-pstack ([637fc95](https://github.com/auron-labs/opencode-plugins/commit/637fc95fa481e9d072c203ee45725b85532f49fb))
+* **pstack:** add standalone bundle script ([a5c8565](https://github.com/auron-labs/opencode-plugins/commit/a5c856582167f7db49f61e4cdee7470dd7f1a5fa))
+
+## Changelog
+
 ## Unreleased
 
 - Add the initial OpenCode v2 port of PStack with a primary orchestrator, six role agents, native skills, and prefixed workflow commands.
